@@ -171,3 +171,19 @@ e162982e	ok	7	What a landing put into title memory is not sent up again (VICTORY
 0da08dfe	FAIL	7	Merge day/faults
 61a9b884	FAIL	6	Merge day/light
 01e1f525	FAIL	8	Merge day/shaders
+4e995446	ok	9	VICTORY_MAP_THREADS=auto is asked for, not the default: 16 threads map no more pages than one in the dorm, and a frame takes longer
+9b90ad11	ok	8	The compare of card copies loads eight places at once (the same hashes)
+35155bed	ok	0	Frame replay: --shaders takes passes of ours too, by their own hash
+b7ab9c49	ok	3	The title's pipelines written down (VICTORY_PIPELINE_BOOK=1, off) and made ahead of a run, each batch in a process of its own (victory warm)
+c9b3f45a	ok	10	The panel is drawn by the diagnostics build only
+79615b78	ok	1	Merge day/textures
+e8d3d918	FAIL	1	Look-first stubs for moves and vector stores (VICTORY_WRITE_SITES); descriptors copied onto themselves are not written (VICTORY_SAME_RECORDS=0: they are); of tracked pages the parts written are taken (VICTORY_TAKE_PARTS=0: pages); waits for the trackers' locks and the heap sync's parts counted
+455f4d6d	ok	3	Merge branch 'local/next' into day/faults
+9ab73028	ok	2	Test of parts taken: other tests' notes at the address
+f4cc8d8b	ok	9	Structure builder: the wait for sizes is off (VICTORY_BVH_SIZES_WAIT=1 turns it on): it mended nothing and costs some 20 ms a frame (light-15)
+c3e643eb	ok	10	Sets of heap slots are bits, the heaps' records have threads of their own, what is mirrored of them is counted
+091151c6	ok	2	Merge day/light
+95037baf	ok	0	Revert "Replay: buffers in heaps opened from memory are made again (without the cross-adapter flag)"
+b6202840	ok	3	Title bytes under flights' writes compared with AVX2 on threads of their own, the pairs sent up made on them; helpers that work ahead are not kept on the fast cores
+a30829c4	ok	10	Pipelines known to take long are made beside the others, by a quarter of the workers (VICTORY_PIPELINE_SLOW=0: in the order created)
+689df313	ok	9	Views mapped beside guarded ones: all views of the page are opened together, under the lock

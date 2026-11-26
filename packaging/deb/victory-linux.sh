@@ -37,6 +37,10 @@ set_default VICTORY_CACHE_DIR "$HOME/.cache/victory"
 # vkd3d-proton tuning for better GPU pipelining on the narrow PCIe link.
 set_default VKD3D_SHADER_CACHE_SIZE $((stage_mb * 32))  # Shader cache: 32× texture stage
 set_default VKD3D_MAX_FRAME_LATENCY 1                    # Tight GPU pipeline
+# NVIDIA-specific vkd3d-proton tuning for CMP compute cards.
+set_default VKD3D_DESCRIPTOR_QA 0                        # Disable descriptor validation (perf boost)
+set_default VKD3D_FORCE_DISCRETE_GPU 1                   # Force discrete GPU (failsafe)
+set_default NV_GPU 0                                     # Select GPU 0 (multi-GPU systems)
 
 report() {
     echo "gpu: $gpu_name, ${vram_mb} MB VRAM, PCIe gen${link_gen} x${link_width} (~${link_mbs} MB/s)"

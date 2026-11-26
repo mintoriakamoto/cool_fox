@@ -253,3 +253,26 @@ f7fb366c	ok	7	Merge fps/card: uploads through a copy queue (VICTORY_UP_QUEUE) an
 e2a28ec7	ok	7	Add ZETTROX to README
 022ee74d	ok	8	Merge fps/fills: the frame meter's lines on a thread of their own (VICTORY_METER_THREAD), one hold for asking, timeline spans
 4fd34fdd	ok	8	Shaders: translate tiled cascade shadows exactly on wave32 hosts
+5cfe32df	ok	4	Drop the invalid play.ps1 skip default and fail on missing executables
+ffc2cf6f	ok	7	GPU: cap idle windows under system-RAM pressure
+fb28d49e	ok	7	The memory map walked every 60 lines (VICTORY_MEMORY_MAP=<n>, was 6), the meter's kind of memory asked once per address; what the asking finds in ranges asked alone
+d792ebd4	ok	8	The switches the documents name are the ones the code reads, with their defaults; xtask checks every VICTORY_* name in the Markdown is read
+effa1dc8	ok	10	VICTORY_WRITE_SITES is not written inside a source tree
+c278f0d5	ok	8	Pooled textures at 64 KiB multiples unless VICTORY_POOL_SMALL=1; diagnostics: a pooled texture whose first level the card reads past its piece is said loudly; test: a placed texture holds its heap
+122d3546	ok	3	Frame meter's lines of every second on its thread too; askings without the kernel's reset (VICTORY_ASK_NORESET) and on several threads (VICTORY_ASK_SPREAD), both off and not yet measured
+c3d5cd80	ok	7	Report file scan outcomes in shader-info and shaders
+33439c8d	ok	3	Give the pipeline book writer a bounded flush after a fatal GPU report
+4cd2d133	ok	7	Textures made while lists sent before them run are shown in their slots only once those ran (VICTORY_SHOW_NEW_LATER, on; 0: at once); the heap test says what it finds
+91018a5d	ok	2	VICTORY_SHOW_NEW_LATER: a slot held back is held once, not again at each draw that reads it
+96a7bd7b	ok	8	Decode packed 16-bit BGR diagnostic targets
+01400899	ok	3	Timing runs: the card's time by kind of list
+a6ba0a8d	ok	8	Merge GitHub main (README)
+b0cfe2ba	ok	0	README: ZETTROX line taken out
+cf9ba084	ok	3	Merge fps/pool: a slot is not switched at once to a pooled texture made while lists sent before it may read it (VICTORY_SHOW_NEW_LATER), pooled textures at 64 KiB
+85d56416	ok	2	The pool's check of a texture's first level past its piece only at debug level: false alarms on this driver
+c83e54c8	ok	8	Ranges asked ahead found by halving, not one by one
+71537d00	ok	2	Ranges asked ahead: no is_empty of their own (only a test asked it; a warning)
+306722bc	ok	3	Merge fps/ask: a submission's asked ranges looked up by binary search; the memory-map walk every 5 min
+d0aaed0f	ok	8	GPU tests: fall back to 1,000,000 view descriptors in replay_big on capped adapters (#116)
+dd67ae73	ok	2	GPU: back host sampler heaps with 2,048 slots and reserve slot 2,047 as null sentinel
+8211226a	ok	3	Report storage quota errors when save usage cannot be read

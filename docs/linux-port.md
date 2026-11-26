@@ -42,7 +42,8 @@ Wine/vkd3d-proton remains the fallback while this is built.
   (not zram) so the commit does not hit the limit. The code's >= 20 GiB VRAM tier already applies
   (card buffers up to 8 GiB, 384 MiB staging a frame, capped to 128 MiB by the 32 GB RAM rule).
 - The PCIe link of this card is narrow: keep textures resident once uploaded rather than streaming.
-  The launcher sets `VICTORY_TEXTURE_STAGE_MB=64` so the first fill is smooth; tune it on the card.
+  `victory-linux` reads the card's PCIe link with `nvidia-smi` and sets `VICTORY_TEXTURE_STAGE_MB` to half the link
+  at 30 frames a second (16 MiB on a gen1 x4 link, up to 128 on gen3 x16); `victory-linux --print-env` shows the choice.
 - FP32 FMA is reportedly throttled on this part (community reports, unverified here). Implemented:
   `VICTORY_NO_FMA=1|0` (unset: on when the adapter name contains "CMP") writes every console
   multiply-add as a separate multiply and add (`fmad` in victory-shader), and is part of the shader cache key.
@@ -82,3 +83,9 @@ variants, integer-target blending off). Already here: 921d8d3, ab34a8b. Not take
 (ray-tracing structure building, City texture streaming and a Radeon renderer export; 11-20 conflicting files each,
 and the CMP card has no ray-tracing hardware); 4775e8a and 2e01ab4 (tests of code we do not have); 7d73e2b (our cache
 already retries temp-file collisions). Its NVIDIA advice (untested by them): ray tracing off (`--no-rt`), FSR 4 off.
+
+## What the Linux launcher reads from the machine (`victory-linux --print-env`)
+GPU name, VRAM, PCIe generation and width (`nvidia-smi`), RAM and swap (`/proc/meminfo`). From them: texture staging
+per frame, DirectStorage staging (128 MiB at 32 GB of RAM or less, else 256), and warnings when swap is under 16 GB,
+VRAM is under 16 GB, or no NVIDIA card is found. Anything you export yourself (`VICTORY_*`) wins. Tested with a stubbed
+`nvidia-smi`; not run on the machine.

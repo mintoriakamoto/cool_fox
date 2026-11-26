@@ -426,6 +426,7 @@ fn title_priority(asked: i32) -> i32 {
 }
 
 /// [`title_priority`].
+#[cfg(windows)]
 pub extern "system" fn SetThreadPriority(thread: *mut c_void, priority: i32) -> i32 {
     static AS_SET: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     let as_set = *AS_SET.get_or_init(|| std::env::var_os("VICTORY_TITLE_PRIORITIES").is_some_and(|v| v == "0"));

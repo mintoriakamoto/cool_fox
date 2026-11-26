@@ -34,17 +34,15 @@ Order of work: (1) platform trait for memory/threads/exceptions in victory-loade
 victory-gpu, Vulkan backend behind it, (4) hle host-passthrough off kernel32.
 Wine/vkd3d-proton remains the fallback while this is built.
 
-## Your box: CMP 170HX-class, 10 GB VRAM, 32 GB DDR5 (corrects the earlier 40 GB assumption)
+## Your box: CMP 170HX-class with 40 GB VRAM, 32 GB DDR5 (as stated by the user)
 - No display engine: render on the NVIDIA card, scan out through the motherboard HDMI (the launcher sets PRIME offload).
-- The README measured 40-46 GB of private memory for this title on a 64 GB PC. 32 GB RAM + 10 GB VRAM
-  is below that: use `--console series-s` (already the launcher default), the `pareto-residency`
-  settings (built for 32 GB RAM, see docs/bug-journal.md), and give the Linux box real swap/zram
-  (Wine commit is backed by overcommit, but the page cache and the title's mappings still need headroom).
-- The PCIe link of this card is narrow, so textures cannot be streamed freely: with 10 GB of VRAM the
-  working set will not stay resident. Keep upload-ahead on, but keep per-frame staging small
-  (the code already scales with the VRAM budget, and caps staging at 128 MiB a frame on 32 GB RAM).
-  The launcher sets `VICTORY_TEXTURE_STAGE_MB=64`; tune it on the card. Expect texture pop-in before frame rate.
-- Swap (reported 40 GB) keeps the title from being killed at 40-46 GB; put it on NVMe, not zram.
+- VRAM is plentiful, system RAM is the tight resource. The README measured 40-46 GB of private memory
+  for this title on a 64 GB PC; with 32 GB use `--console series-s` (launcher default) and the
+  `pareto-residency` settings (built for 32 GB RAM, docs/bug-journal.md), and give Linux swap on NVMe
+  (not zram) so the commit does not hit the limit. The code's >= 20 GiB VRAM tier already applies
+  (card buffers up to 8 GiB, 384 MiB staging a frame, capped to 128 MiB by the 32 GB RAM rule).
+- The PCIe link of this card is narrow: keep textures resident once uploaded rather than streaming.
+  The launcher sets `VICTORY_TEXTURE_STAGE_MB=64` so the first fill is smooth; tune it on the card.
 - FP32 FMA is reportedly throttled on this part (community reports, unverified here): emit separate
   mul+add instead of `Fma` in victory-shader behind a cache-keyed `VICTORY_NO_FMA` switch, after a test on the card.
 - No RT cores: keep `-RayTracing` off. Mesh shaders and SM 6.6 through vkd3d-proton on that driver are unconfirmed.

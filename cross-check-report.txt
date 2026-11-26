@@ -1,0 +1,25 @@
+commit	result	seconds	subject
+d4254dc0	ok	61	Merge local/next d4772b3
+827ec2d5	ok	6	Merge local/copies (wide textures, joined writes)
+68e10e57	ok	7	A DirectStorage queue starts its requests at the title's submit, not at half its capacity
+fecaa14b	ok	8	Merge local/streaming: requests start at the title's submit
+b1da7281	ok	6	Writes through views picked from the heap come back (VICTORY_PICKED_WRITES)
+795d55eb	ok	8	Merge local/upcopies: checks of what goes up to card copies, picked writes (both off)
+74045e46	ok	4	Holes of view memory known by their bits; landed blocks taken; askings of views left out
+cb72fc0a	ok	4	Merge commit '74045e4' into local/upcopies
+50983d80	ok	0	Merge branch 'local/next' into local/copies
+4e3e0654	ok	7	Typed buffer loads of 16-bit channels pack two per register; skipped devices say why (upstream c430b1d, 100de0e)
+bd80bbe1	ok	4	Words of the title's image logged each second (VICTORY_IMAGE_WATCH; off)
+c651346a	ok	5	A refresh of a copy on the card sends the dwords title memory changed, and no others (VICTORY_SEND_CHANGED, on)
+c05f949c	ok	5	victory replay --pixel: which commands change a pixel, in every target
+958c34b0	ok	11	Merge How much of a texture is mapped is read from the runtime's own record
+af2baf53	ok	0	Merge victory replay --pixel: which commands change a pixel, in every target
+5b422ba0	ok	6	wip: submissions send their own bytes
+4f6bd623	ok	5	Merge commit 'c651346' into local/upcopies
+1a93f0fd	ok	7	Dynamic descriptor slots: the search goes past the cursor as far as it should
+8ece2ffe	ok	3	Merge local/shaders2: the dynamic descriptor search
+84eae352	ok	2	Indirect dispatches of more than 65,535 groups run whole (VICTORY_INDIRECT_WIDE)
+572bd4c3	ok	1	Merge local/world: VICTORY_IMAGE_WATCH
+18c01292	ok	7	Each submission's shaders read the bytes it was prepared with (VICTORY_SEND_OWN)
+0fdcaa3b	ok	5	victory replay --flow, --images, --until; shader-info names the hashes
+0b5f191b	ok	2	A pipeline sync waits for shader writes on the host

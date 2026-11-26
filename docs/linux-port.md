@@ -73,4 +73,4 @@ lane-uniform analysis is Belobug's. Type-checks for Windows, 210 shader tests pa
 | `emulate_amd_only` (CPU `mwaitx`, `rdpru`) | already emulated for any CPU |
 | Indirect dispatch widened past 65,535 groups (`indirect::amd`) | not available: D3D12 caps groups per dimension on NVIDIA; large dispatches stay cut (open) |
 | FSR 4 upscaler (`VICTORY_FSR_4K`) | off; it needs an RDNA 4 card. DLSS needs NVIDIA's SDK (not added) |
-| `VICTORY_PORT_*` (off in Belobug's builds) | on in our launchers except `PORT_CBV` (GPU-side, try it by hand) |
+| the five port switches `VICTORY_PORT_CONSTANTS`, `_DESCRIPTORS`, `_GUARD`, `_JOURNAL`, `_CBV` (off in Belobug's builds) | on in our launchers except `PORT_CBV` (GPU-side, try it by hand) |

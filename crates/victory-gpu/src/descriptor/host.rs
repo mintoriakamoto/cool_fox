@@ -524,22 +524,10 @@ static FLIPS: Mutex<Vec<Flip>> = Mutex::new(Vec::new());
 /// promote them out of the `neutral()` gray stand-in before sampling them.
 pub(crate) struct PendingListFlip {
     id: u64,
-    pub(crate) origin: (usize, u64),
     flip: Flip,
 }
 
 impl PendingListFlip {
-    pub(crate) fn index(&self) -> u32 {
-        self.flip.index
-    }
-
-    pub(crate) fn handle(&self) -> u64 {
-        self.flip.handle
-    }
-
-    pub(crate) fn key(&self) -> u64 {
-        self.flip.key
-    }
 }
 
 static NEXT_PENDING_FLIP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -2185,33 +2173,6 @@ impl HostHeap {
         made_due
     }
 
-    /// Wakes uploaded placed-texture slots touched by recent physical-page
-    /// writes (DirectStorage completions) immediately (`due = frame`) right
-    /// before a one-shot ped/decoration bake draw.
-    pub(crate) fn texture_slots_bake_written(&self, frame: u64) -> usize {
-        let mut ranges = std::mem::take(&mut *BAKE_PAGE_WRITTEN.lock().unwrap_or_else(|e| e.into_inner()));
-        if ranges.is_empty() {
-            return 0;
-        }
-        join(&mut ranges);
-        let mut slots: Vec<u32> = {
-            let placed = self.placed.lock().unwrap_or_else(|e| e.into_inner());
-            ranges.iter().flat_map(|&(start, end)| placed.slots_holding(start, end)).collect()
-        };
-        if slots.is_empty() {
-            return 0;
-        }
-        slots.sort_unstable();
-        slots.dedup();
-        slots.retain(|&slot| !self.tabled_lately(slot, frame));
-        let mut textures = self.textures.lock().unwrap_or_else(|e| e.into_inner());
-        slots.retain(|slot| textures.slots.get(slot).is_none_or(|w| w.mapped > 0 || w.checked.2 != 0));
-        for &slot in &slots {
-            textures.changed(slot, frame, frame);
-        }
-        slots.len()
-    }
-
     /// [`HostHeap::texture_slots_page_written`] for `ranges` (start, end):
     /// the slots that held bytes of them, those of them uploaded before,
     /// and those made due (the latter, if `due`).
@@ -2524,12 +2485,10 @@ impl HostHeap {
         let (heap, key) = (std::ptr::from_ref(self) as usize, record_key(handle));
         let asked = crate::host::now_ms();
         let id = NEXT_PENDING_FLIP.fetch_add(1, Relaxed);
-        let origin = (std::ptr::from_ref(list) as usize, list.epoch());
         {
             let mut pending = PENDING_LIST_FLIPS.lock().unwrap_or_else(|e| e.into_inner());
             pending.push(PendingListFlip {
                 id,
-                origin,
                 flip: Flip { after: 0, heap, index, handle, key, late, asked },
             });
             PENDING_LIST_COUNT.store(pending.len(), Release);
@@ -2556,106 +2515,6 @@ impl HostHeap {
             flip.after = crate::host::submissions().0;
             FLIPS.lock().unwrap_or_else(|e| e.into_inner()).push(flip);
         });
-    }
-
-    /// Whether any deferred slot flip or view remake for this heap requires
-    /// settling in-flight GPU submissions before exposing real textures to a
-    /// one-shot decoration bake draw.
-    pub(crate) fn needs_gpu_settle_for_bake(&self) -> bool {
-        let own = std::ptr::from_ref(self) as usize;
-        let finished = crate::host::submissions().1;
-        if PENDING_LIST_COUNT.load(std::sync::atomic::Ordering::Acquire) > 0 {
-            let pending = PENDING_LIST_FLIPS.lock().unwrap_or_else(|e| e.into_inner());
-            if pending.iter().any(|p| p.flip.heap == own) {
-                return true;
-            }
-        }
-        {
-            let flips = FLIPS.lock().unwrap_or_else(|e| e.into_inner());
-            if flips.iter().any(|f| f.heap == own && f.after > finished) {
-                return true;
-            }
-        }
-        let after = RESHOWN_AFTER.lock().unwrap_or_else(|e| e.into_inner());
-        after.iter().any(|&(at, _)| at > finished)
-    }
-
-    /// Drains deferred flips still sitting in unsubmitted command lists for
-    /// this heap so a decoration bake can mirror them out of `neutral()`.
-    /// Entries that cannot be promoted yet (unmapped memory or deferred
-    /// staging) must be returned via [`HostHeap::restore_pending_list_flip`].
-    pub(crate) fn take_pending_list_flips(&self) -> Vec<PendingListFlip> {
-        if PENDING_LIST_COUNT.load(std::sync::atomic::Ordering::Acquire) == 0 {
-            return Vec::new();
-        }
-        let own = std::ptr::from_ref(self) as usize;
-        let mut pending = PENDING_LIST_FLIPS.lock().unwrap_or_else(|e| e.into_inner());
-        let (mine, rest): (Vec<PendingListFlip>, Vec<PendingListFlip>) =
-            pending.drain(..).partition(|p| p.flip.heap == own);
-        *pending = rest;
-        PENDING_LIST_COUNT.store(pending.len(), std::sync::atomic::Ordering::Release);
-        mine
-    }
-
-    /// Re-queues an unpromoted deferred flip drained by
-    /// [`HostHeap::take_pending_list_flips`] so its originating command list
-    /// still flips it out of `neutral()` once submitted.
-    pub(crate) fn restore_pending_list_flip(&self, item: PendingListFlip) {
-        let mut pending = PENDING_LIST_FLIPS.lock().unwrap_or_else(|e| e.into_inner());
-        pending.push(item);
-        PENDING_LIST_COUNT.store(pending.len(), std::sync::atomic::Ordering::Release);
-    }
-
-    /// Whether title descriptor slot `handle` still holds record `key`.
-    pub(crate) fn slot_still_at(&self, handle: u64, key: u64) -> bool {
-        key != 0 && record_key(handle) == key
-    }
-
-    /// Looks up `(view, key)` for slot `index` prior to a synchronous bake
-    /// upload without replacing its current host descriptor with `neutral()`;
-    /// [`HostHeap::publish_uploaded_slot`] exposes the real descriptor and
-    /// updates `Spans`/stride tracking once the GPU copy finishes.
-    pub(crate) fn prepare_bake_slot(&self, index: u32, handle: u64) -> Option<(View, u64)> {
-        if index >= self.count {
-            return None;
-        }
-        let key = record_key(handle);
-        let view = (key != 0).then(|| view_at(key as u32, (key >> 32) as u32)).flatten()?;
-        Some((view, key))
-    }
-
-    /// Exposes the real host descriptor for slot `index` after its synchronous
-    /// bake upload has completed on the GPU, updating `Spans`/stride tracking
-    /// without re-queuing the slot in `TextureQueue`.
-    pub(crate) fn publish_uploaded_slot(&self, index: u32, handle: u64, key: u64) -> bool {
-        if index >= self.count || key == 0 {
-            return false;
-        }
-        let (published, stale) = {
-            let _made = self.made.lock(index);
-            if self.made.get(index) == Some(key) {
-                return false;
-            }
-            if record_key(handle) != key {
-                return false;
-            }
-            let Some(view) = view_at(key as u32, (key >> 32) as u32) else {
-                return false;
-            };
-            let stale = self.note_buffer(index, Some(&view), true);
-            if let Some(kept) = make(&view, self.at(index)) {
-                self.put(index);
-                self.quick_is(index, 0);
-                self.clear_twin(index);
-                self.made.set(index, key);
-                self.keep(index, kept);
-                (true, stale)
-            } else {
-                (false, stale)
-            }
-        };
-        self.unmake_stale(index, stale);
-        published
     }
 
     /// Makes the slots whose new view's upload has run
@@ -6501,12 +6360,10 @@ mod bake_flip_tests {
             let mut pending = PENDING_LIST_FLIPS.lock().unwrap_or_else(|e| e.into_inner());
             pending.push(PendingListFlip {
                 id: id1,
-                origin: (1, 1),
                 flip: Flip { after: 0, heap, index: 7, handle: 0, key: 11, late: Some(1), asked: 0 },
             });
             pending.push(PendingListFlip {
                 id: id2,
-                origin: (2, 1),
                 flip: Flip { after: 0, heap, index: 8, handle: 0, key: 12, late: Some(1), asked: 0 },
             });
             PENDING_LIST_COUNT.store(pending.len(), std::sync::atomic::Ordering::Release);
@@ -6528,7 +6385,6 @@ mod bake_flip_tests {
             for (id, idx) in [(id1, 10), (id2, 11)] {
                 pending.push(PendingListFlip {
                     id,
-                    origin: (3, 1),
                     flip: Flip { after: 0, heap, index: idx, handle: 0, key: 20, late: Some(1), asked: 0 },
                 });
             }

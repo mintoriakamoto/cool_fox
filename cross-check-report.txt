@@ -147,3 +147,7 @@ a50c7fde	ok	0	Replay: buffers in heaps opened from memory are made again (withou
 82ca1347	ok	6	A stand-in for the title's traced indirect light (VICTORY_AMBIENT, off): estimated from the light visible surfaces send out
 37332f4d	ok	7	Parts of submissions prepared as one (VICTORY_JOIN_PARTS=8; off), fills cut free of copies at their place (VICTORY_PLACED_ORDER)
 7bc7c074	ok	6	Write faults: a block just written rests before it is guarded again (VICTORY_GUARD_REST=0: not), a fault opens the view it came through alone (VICTORY_OPEN_ONE_VIEW=0: every view), guarded blocks kept as bits
+ac11bbbe	ok	8	Pages are mapped by sixteen threads while the title streams as fast as they are mapped, by the caller alone otherwise (VICTORY_MAP_THREADS=auto, which it is unless set)
+7da523a9	ok	8	The stand-in for the indirect light can bound what the air scatters (VICTORY_AMBIENT_AIR, off)
+a9896686	ok	7	Passes over the screen have pipeline workers and a wait of their own (VICTORY_SCREEN_WAIT_MS=0: not); after Belobug 18e57db8
+72f7f132	ok	8	Ray tracing document: the stand-in, the sizes, what is known

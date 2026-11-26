@@ -74,3 +74,11 @@ lane-uniform analysis is Belobug's. Type-checks for Windows, 210 shader tests pa
 | Indirect dispatch widened past 65,535 groups (`indirect::amd`) | not available: D3D12 caps groups per dimension on NVIDIA; large dispatches stay cut (open) |
 | FSR 4 upscaler (`VICTORY_FSR_4K`) | off; it needs an RDNA 4 card. DLSS needs NVIDIA's SDK (not added) |
 | the five port switches `VICTORY_PORT_CONSTANTS`, `_DESCRIPTORS`, `_GUARD`, `_JOURNAL`, `_CBV` (off in Belobug's builds) | on in our launchers except `PORT_CBV` (GPU-side, try it by hand) |
+
+## DexNom/VIctory (read to 64bd58f, 2026-11-25)
+Its history is independent (it starts at an "Initial commit"), so nothing can be merged: commits are picked one by one.
+Taken: 76749ce (voxel visibility shader, wave64 mask restored from scalar copies) and ddb7332 (40 shader
+variants, integer-target blending off). Already here: 921d8d3, ab34a8b. Not taken: bc3cd4b, 5f4c3df, b8ff22e
+(ray-tracing structure building, City texture streaming and a Radeon renderer export; 11-20 conflicting files each,
+and the CMP card has no ray-tracing hardware); 4775e8a and 2e01ab4 (tests of code we do not have); 7d73e2b (our cache
+already retries temp-file collisions). Its NVIDIA advice (untested by them): ray tracing off (`--no-rt`), FSR 4 off.

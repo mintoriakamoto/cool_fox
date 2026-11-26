@@ -159,3 +159,14 @@ f19e55b8	ok	6	The title's writes into guarded blocks go in beside the guard: its
 6912fb1d	ok	0	Frame replay: shaders of another translation (--retranslate, --shaders, --shaders-b turn by turn), times per pass as medians
 7c607d63	ok	8	Merge day/submit: the panel, parts of submissions prepared as one (VICTORY_JOIN_PARTS, off), fills cut free of copies
 9e731417	FAIL	6	Merge day/textures
+7eb18507	FAIL	5	Merge day/light
+d0780743	FAIL	5	Merge day/faults
+adf57069	ok	8	Structure builder: accesses stay near the root views, a size that cannot be one counts as none (VICTORY_BVH_BOUNDS=0: neither)
+e4d08379	FAIL	7	A flipped slot's quick record is forgotten
+e162982e	ok	7	What a landing put into title memory is not sent up again (VICTORY_LAND_ECHO=0: sent)
+83a1bcf5	FAIL	7	Writes of the title's that change nothing are not made: faulting stores and copies beside the guards, and flags it sets that are set (VICTORY_WRITE_SITES=<file>: places changed at load to look first; off without it)
+780f9cc6	ok	6	VICTORY_PLACED_ORDER is off unless asked for: the case did not come up in three runs
+0a9dceae	FAIL	7	Merge day/submit
+158b9aa3	ok	8	The image's name is kept for VICTORY_WRITE_SITES (the program did not build)
+0da08dfe	FAIL	7	Merge day/faults
+61a9b884	FAIL	6	Merge day/light

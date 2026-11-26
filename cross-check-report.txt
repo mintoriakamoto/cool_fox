@@ -23,3 +23,127 @@ af2baf53	ok	0	Merge victory replay --pixel: which commands change a pixel, in ev
 18c01292	ok	7	Each submission's shaders read the bytes it was prepared with (VICTORY_SEND_OWN)
 0fdcaa3b	ok	5	victory replay --flow, --images, --until; shader-info names the hashes
 0b5f191b	ok	2	A pipeline sync waits for shader writes on the host
+ba509c5a	ok	3	Addresses of ray-tracing structures: views of a structure have no buffer
+bf9ebebf	ok	3	Merge local/next
+47ae1737	ok	6	Merge commit '572bd4c' into local/upcopies
+7232f458	ok	6	Stores by raw address declare what their dispatch names, not every copy reached so far
+350f7f49	ok	6	Title buffer copies stand where the list has them (VICTORY_COPIES_IN_PLACE)
+3729ba04	FAIL	9	gfx10: resolve the opcode name once, at decode time
+70868f8c	FAIL	3	XGameSave: a stray or unreadable version folder never costs the save
+daeeb28c	ok	11	VIctory's 88 commits fitted in; clzero loops end as the console's do
+913d4f0c	ok	1	fix(hle): keep apostrophes intact when splitting relaunch args
+64c31780	ok	1	Audio: an XMA write block past the ring's end wraps before the first write
+b9c18b06	ok	3	VIctory e29391f, 13185f5 and 4fc9d70, by hand
+751bc32d	ok	2	Merge local/lighting
+ff1bd663	ok	4	Merge local/upcopies
+d1c8acd5	ok	16	Revert "HLE: show title windows through a stand-in that always reads its messages"
+8a8ad353	ok	3	Crash tracing that can stay on: VICTORY_D3D12_DRED=light and =faults; lost texture writes named
+1c8dd315	ok	4	Pixel programs read their quad's neighbours with quad operations: helper lanes take no part in wave reads
+1f1a4336	ok	3	Speed and room: draws' own records left to the draws in the heap sync, 2^20 table slots, textures kept while the card has room
+ad30f2cb	ok	3	Shared locks for buffer and window lookups; early pipeline list without a small cap; crash report names what a list binds
+ac34b4d4	ok	6	Crash report names the indirect executions a list stopped at; constant buffer slots hold their scratch memory
+7d3e1790	ok	3	Memory the card was given stays with it while there is room
+1f58d913	ok	4	Shaders read the buffers they pick through raw twins of the heap's views
+9526cb28	ok	7	Formats: a texture of which only the smaller mips are there detiles from its start
+8d79927a	ok	6	Textures from the first level viewed; equal uploads left out; bakes take textures as they are; kept by the card's real room
+6ff1e14a	ok	7	Diagnostics: a sampling profiler (VICTORY_PROFILE=<from>,<to>,<ms>,<file>[;...])
+49d71266	ok	3	Streaming: mapping calls ask only for what they need; the thread that loads runs ahead; a streaming log
+c278c677	ok	3	The process runs above normal priority, pipeline workers below the title's loading
+b558934d	ok	8	Structure builder: root views as memory by address, windows of its own on the card, upload memory below 2^37
+d77556c7	ok	8	Fewer empty staging blocks kept; the raw twins made are counted
+91361319	ok	3	Merge night/stream
+f76060a6	ok	3	Merge night/cpu: a sampling profiler
+2ba52250	ok	6	Merge night/textures: first level viewed, equal uploads left out, exact bakes
+bd68f5e1	ok	8	Card memory the CPU maps: windows, sends and scratch (VICTORY_WINDOWS_BAR_MB, VICTORY_SEND_BAR, VICTORY_SCRATCH_BAR); the card's own stamps (VICTORY_CARD_SPANS)
+7130d521	ok	7	Bakes take what is due now first; textures that change unnoticed are looked at each frame; placed textures over unlike targets said
+3e64a646	ok	6	Card steps: the plan joins its ranges once a round, each place is looked up once
+40580d77	FAIL	2	The title's bytes under flights' writes go up by whole words (VICTORY_UNDER_WORDS=0: by bytes)
+52e0c03f	FAIL	2	Snapshot memory, host lists and send memory kept for reuse (VICTORY_SNAPSHOT_POOL=8: as before)
+53c5256b	FAIL	4	The heaps' records are brought up to date beside the preparing (VICTORY_HEAP_SYNC_ASIDE=0); a made slot is told without the lock (VICTORY_QUICK_MIRROR=0)
+1a411ae4	FAIL	2	A thread asks the write watch ahead of the submissions (VICTORY_ASK_EARLY); the time ahead of the preparing is split
+aff4def0	FAIL	3	A submission's fills of upload memory are done together on several threads (VICTORY_WIDE_FILLS=0: one by one)
+f6721303	ok	6	The pass over the heap's buffer views is made beside the recording (VICTORY_HEAP_PASS_ASIDE=0: in it)
+59c1f2fc	ok	8	Merge branch 'night/crash' into local/next
+5f86fa30	ok	8	VICTORY_CARD_AWAKE: the card's clocks kept up between submissions
+bde604e7	ok	8	Title memory by address: pages in arenas, structures' pages made ready ahead
+f3ba7134	ok	8	The first copy into a texture the title fills goes over what title memory holds
+773b4031	ok	7	Title memory by address: packed structures go up whole when the builder unpacks them; small buffers' pages stay title memory
+0c32e345	ok	8	Merge branch 'night/textures' into local/next
+02f36e44	ok	3	Views are made beside the heaps the card sees and copied in whole
+78389b55	ok	3	Merge branch 'night/crash' into local/next
+0d065d35	ok	7	The title's idle and lowest threads run below normal: loading no longer waits for idle processors
+565f4a56	ok	3	Pages are mapped side by side: eight threads stand in the host's queue instead of one
+ea375caa	ok	8	Merge branch 'local/next' into night/light
+b69eab84	ok	8	Merge branch 'night/stream' into local/next
+3ead56e1	ok	8	Refreshes copy and send the 4 KiB parts of a page that were written (VICTORY_PAGE_PARTS=0: the 64 KiB page); the early asking is off
+dc2a3ad4	ok	2	Copies that shaders write are brought up to date together ahead of a submission's steps (VICTORY_REFRESH_AHEAD=0: one by one)
+f6db4793	ok	2	The heaps' records are also looked at between submissions (VICTORY_HEAP_SYNC_EARLY=0: not)
+41808180	ok	1	The title's page mappings are mapped in runs, and not again where they are (VICTORY_MAP_RUNS=0: page by page)
+2c79c5b7	ok	8	Merge local/next (b69eab84) into night/cpu
+2ded49e8	ok	8	Card memory the CPU maps: scratch switch gone, what the others measured; a test
+73fcfa87	ok	7	Merge branch 'local/next' into night/card
+96bfd0eb	ok	8	Stores by address are bounded: title buffers take the builder's only where it was given them to write
+1420b07a	ok	8	Every buffer read as raw bytes through the heap is read at its raw twin
+a9c2e991	ok	5	Draw records of 2^23 vertices or more and unfilled mesh records run empty
+917e1a71	ok	4	Merge branch 'night/crash' into local/next
+c95cf7ed	ok	6	Merge local/next into night/cpu
+2dfba4db	ok	7	Texture uploads wait for no mapping, ask no guards and hash cheaply; the sweep looks at a part; bakes pass once for what is new
+e1561288	ok	8	Title memory by address: packed structures that are gone give their pages back; ranges only for views written
+2c982ee5	ok	8	Landing goes beside the guards while mappings change; rectangles read without that lock
+8d6b1a6c	ok	6	Batched clamp: an unfilled mesh record is all zeros, as the clamp of one leaves it
+f61ecf3b	ok	6	Merge branch 'night/card' into local/next
+21323661	ok	7	AMD's wait instructions are replaced in place at their first fault (VICTORY_PATCH_WAITS=0: emulated each time)
+b8b30d1c	ok	6	Submissions are prepared and sent by a thread of ours (VICTORY_ASYNC_SUBMIT=1, off)
+59bccaca	ok	6	The first copy into a texture the title fills goes over zeros
+4dd57104	ok	6	Merge local/next into night/textures
+2eb7d0c0	ok	6	Raw twins of views off dwords are moved there too, not null
+19be44dd	ok	7	Merge local/next (f61ecf3b) into night/cpu
+c51ca571	ok	8	Title memory by address: the dump names what was built and unpacked; a small buffer's results once a list
+3c072103	ok	0	docs: ray tracing, the state after the first runs
+be085e53	ok	7	Merge commit 'f61ecf3b' into night/light
+a0ec1123	ok	7	Merge branch 'night/crash' into local/next
+5de948cb	ok	6	Merge branch 'night/textures' into local/next
+28fbbfdc	ok	7	Title memory by address: every list brings up every copy, whoever made it
+51d3f4da	ok	7	A texture is not copied onto itself; the process opts out of the efficiency mode (victory-fork a2537066)
+d2a8f03b	ok	8	Title memory by address: what streaming brings is taken when the list is submitted, not when it is recorded
+35d4815d	ok	6	Merge branch 'night/light' into local/next
+55babd1a	ok	6	Merge night/cpu: processor work, wait instructions patched, submit thread (off)
+040aa272	ok	8	VICTORY_CARD_AWAKE: menus keep the card awake too (comment)
+13ffc283	ok	9	Wait instructions over the end of eight bytes are replaced too; clzero loops become plain stores (VICTORY_PATCH_CLZERO=0: emulated)
+67471988	ok	3	A book of who has and had the card's memory; a check of every view slot
+c0104bc3	ok	0	Merge branch 'night/crash' into local/next
+793d8b09	ok	2	Merge branch 'night/card' into local/next
+96f2f32e	ok	5	The threads a frame waits for are kept on the fast cores (VICTORY_FAST_CORES=0: not; 1: without the helpers)
+ef556e42	ok	5	The crash report names direct mesh dispatches; buffers and groups stay inside what there is
+b77262b5	ok	2	Merge branch 'night/crash' into local/next
+9e30a461	ok	1	Scripted keys can be held from one time to another
+a0b4909d	ok	3	Objects let go and lists that ran are kept about two frames longer (VICTORY_BURY_LAG=0: not)
+ba837eef	ok	4	Merge branch 'night/cpu' into local/next
+0322b39a	ok	3	New memory is resident before anything names it (VICTORY_WAIT_RESIDENT=0: as before)
+336f6139	ok	4	A timeline of a few frames, with the chain each present came out of (VICTORY_TIMELINE)
+a7e8c350	ok	3	A measurement: textures of new blocks read by lists sent before; the book knows a block again whose pointer something else had
+fe59a139	ok	3	Merge branch 'local/next' into night/crash
+a1bdba4c	ok	6	Recording: a lock a descriptor slot, a thread's own answers about buffers, tables left as they are when nothing changed
+f1d3eb2b	ok	6	New card memory is waited for until a queue of its own has run after it (VICTORY_WAIT_RESIDENT=0: not)
+3b73cb0e	ok	6	Textures are cut from blocks older than every list on the card (VICTORY_RIPE_BLOCKS=0: from new ones too)
+a74de317	ok	4	Merge branch 'local/next' into night/crash
+005c663b	ok	0	Merge branch 'night/crash' into local/next
+4e77a879	ok	7	A list makes a view its tables hold once and copies its descriptor (VICTORY_LIST_VIEWS=0: for every table); a draw's tables are gone through without memory of the heap
+6e5afc79	ok	6	Merge branch 'local/next' into night/cpu
+6acfbb86	ok	2	A copy's buffer is asked for its bytes when they are first needed (copies of tests have none)
+8b01744f	ok	1	Merge branch 'night/cpu' into local/next
+3bab23c0	ok	2	Title slots show a new texture after its upload has run (VICTORY_SHOW_AFTER=1; off), and the book says more of one
+972bb4b0	ok	0	Merge branch 'night/crash' into local/next
+810efe58	ok	5	Structure builder and rays: dispatches counted in threads, empty slots never entered, pages that are not there never hit; vertex signatures as DXC orders them
+d1c412c5	ok	5	A slot written with another texture goes on showing one that can stand for it (VICTORY_KEEP_SHOWN=1; 0: black, then grey); textures that pop are counted (VICTORY_POP_WATCH)
+350c6864	ok	4	First uploads of textures picked by index run on a copy queue of their own, their slots show them when they have (VICTORY_UPLOAD_AHEAD=1; off); blips found while the camera moves
+9a6c829d	ok	4	Shaders: normalized buffer codes give the nearest float, cube gradients take DXIL's base-2 logarithm, d16 data of integer views keeps its bits, unordered views of vertex programs are declared
+3315f29a	ok	7	The run's numbers on the picture (VICTORY_PANEL=1; off; F3 shows and hides it)
+e77a7d9f	ok	7	Ranges of memory that changed under texture views are joined before they are looked up (DexNom/VIctory 921d8d3b)
+3a99ee61	ok	7	List calls written down and translated by threads of ours (VICTORY_THIN=1, off)
+30f46c92	ok	4	Structure builder: fences around its buffer atomics (VICTORY_BVH_FENCES=0: none)
+a50c7fde	ok	0	Replay: buffers in heaps opened from memory are made again (without the cross-adapter flag)
+2c20d7a6	ok	3	Structure builder: submissions that ask for structures' sizes are waited for (VICTORY_BVH_SIZES_WAIT=0: not); a packed structure is one node longer; VICTORY_BVH_TRACE
+82ca1347	ok	6	A stand-in for the title's traced indirect light (VICTORY_AMBIENT, off): estimated from the light visible surfaces send out
+37332f4d	ok	7	Parts of submissions prepared as one (VICTORY_JOIN_PARTS=8; off), fills cut free of copies at their place (VICTORY_PLACED_ORDER)
+7bc7c074	ok	6	Write faults: a block just written rests before it is guarded again (VICTORY_GUARD_REST=0: not), a fault opens the view it came through alone (VICTORY_OPEN_ONE_VIEW=0: every view), guarded blocks kept as bits

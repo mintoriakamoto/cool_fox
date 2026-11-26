@@ -296,3 +296,65 @@ d1f883ec	ok	6	Shaders: mask operations on a joined number, read as data, are its
 1162d38f	ok	6	Shader cache: keyed by a translator version, not its source
 4cb90bee	ok	7	Renderer port 2: the title's memcpy/memmove mark the view records they copy into the heap; misses of draws' tables counted apart
 f4b48ad7	ok	12	Publish the pareto-residency Windows build and portable launcher
+a8b51330	ok	11	Report diagnostic settings discarded by play.ps1
+190a6869	ok	5	Merge port/shaders: every shader the title uses translates (25,790 of 25,985; the 195 left are unused geometry shaders), versioned shader store
+f249fe05	ok	4	Merge port/render2: renderer patch 2, the title's descriptor-table stores mark their slots (VICTORY_PORT_DESCRIPTORS=1, off by default)
+9b7dc77d	ok	4	Honor both host wave override names in translate and translate --warm
+00c7df9b	ok	7	Fix workspace Clippy -D warnings failures across CI targets
+85a663d3	ok	7	coolfox 641835a4+581b0cb9: compose a second presented plane over the first (VICTORY_PLANES=1)
+46e32978	ok	7	coolfox 641835a4: tables planned once per pipeline (TablePlan); fallback heaps (VICTORY_FALLBACK_HEAPS=1)
+368293ec	ok	10	Ignore retained registers on ordinary whole-register writes
+cee78fa7	ok	4	Trace where pipeline workers spend time
+706305b4	ok	10	coolfox residency budgets (VICTORY_RESIDENCY=1); pool growth backs off after a refused block
+6d172c42	ok	7	coolfox c64fc9b4: the heap buffer pass keeps its ranges on the heap; per-heap passes (VICTORY_SWEEP_PER_HEAP=1)
+8a0700ae	ok	1	coolfox fabb872a/641835a4: XMA voices refilled after their end (VICTORY_XMA_REFILL=1); DirectStorage staging floor (VICTORY_DSTORAGE_STAGING_MB)
+a6a6ef73	ok	7	Merge remote-tracking branch 'upstream/main' into fix/trace-pipeline-workers
+773d902f	ok	8	coolfox 641835a4: one barrier per card buffer after its copies, however many copies lie in it
+39031cb4	ok	8	README: the goal (30 fps or more without ray tracing, then higher; porting, not emulating), where it stands, the renderer patches
+7c3d839c	ok	2	Our threads prefer the cores of the largest last-level cache where all cores are of one class (VICTORY_CACHE_CORES, on; 0: not)
+f31e8fa1	ok	3	Merge PR #137: Report diagnostic settings discarded by play.ps1
+4651f89c	ok	0	Merge PR #78: Drop the invalid play.ps1 skip default and fail on missing executables
+153cf84b	ok	2	Merge PR #130: Correct the required switches for three opt-in upcheck tests
+d38720a2	ok	0	Merge PR #120: GPU tests: fall back to 1,000,000 view descriptors in replay_big on capped adapters (#116)
+2ba2a664	ok	1	Merge PR #5: Fix resource-state and binding errors in the replay fixture
+0dc8c655	ok	0	Merge PR #9: replay: defer clamp scratch copy until split transition completes
+eb797463	ok	2	Merge PR #39: GPU: state the DRED stop command as the first uncompleted op (#22)
+64d2b76c	ok	3	Merge PR #17: Count a frame only after DXGI accepts the present
+dfeabb14	ok	0	Merge PR #104: Decode packed 16-bit BGR targets in diagnostic captures
+1778ac5f	ok	3	Merge PR #106: Timing runs: the card's time by kind of list
+1a7d64a2	ok	0	Merge PR #69: GPU: add optional memory category log
+2016f8de	ok	1	Merge PR #132: Distinguish named and ordinal imports in census missing reports
+4dde9d57	ok	4	Merge PR #139: Honor both host wave override names in translate and translate --warm
+930a35cf	ok	0	Merge PR #128: Report warm worker startup failures without marking pipelines as bad
+c02db953	ok	1	Merge PR #127: Run default and diagnostics tests independently of Clippy
+450b6124	ok	1	Merge PR #123: Report storage quota errors when save usage cannot be read
+e102fca1	ok	8	Merge PR #89: VICTORY_WRITE_SITES: refuse a file inside the source tree (#33)
+150f287e	ok	2	Merge PR #14: copies of title memory: a guard page fails the copy and stays a guard page
+15f1a48e	ok	3	Merge PR #63: Retry incomplete pipeline book writes and flush on orderly exit
+93292908	ok	3	Merge PR #121: GPU: back host sampler heaps with 2,048 slots and reserve slot 2,047 as null sentinel
+86bb00ec	ok	3	Merge PR #23: Keep structured buffer reads raw on heaps without descriptor twins
+ab9f1b72	ok	2	Merge PR #24: Skip unrelated buffer slots in each spread heap scan
+4c04dda3	ok	6	Merge PR #77: GPU: opt-in system-RAM budget for idle windows
+a5e42338	ok	4	Merge PR #4: Shaders: run LDS flag regions on 32-lane GPUs
+29c64295	ok	5	Merge PR #66: Shaders: count threads of wave64 builder programs on 32-lane hosts (NVIDIA)
+0cb13721	ok	3	Merge PR #82: Translate tiled cascade shadows exactly on wave32 GPUs
+8eefadc9	ok	4	Merge PR #142: Translate BVH prefix scans on wave32 GPUs
+f3f6bb62	ok	4	Merge PR #7: Share GPU selection between runtime and shader validation
+8ec1189d	ok	4	Merge PR #140: Fix workspace Clippy -D warnings failures across CI targets
+bd687863	FAIL	2	Merge PR #117: Report file scan outcomes in shader-info and shaders
+1eed7793	FAIL	1	Merge PR #90: Docs: switches as the code reads them, and an xtask check for dead names (#49)
+5719fca3	FAIL	3	Merge fixup: PR #24's Slots::all takes a word mask (two tests main added since)
+f03bfa51	ok	0	Merge fixup: PR #117's file scan in precompile names the path main's failure lines print
+022db78e	ok	3	Merge PR #144: Trace shader and driver work on pipeline workers
+4c3f311a	ok	2	Merge PR #147: Our threads prefer the big-cache cores on dual-CCD X3D Ryzens (VICTORY_CACHE_CORES)
+49cb83b4	ok	6	Frame rate switch: VICTORY_FRAME_INTERVAL_MS (our clock) and the title's own 30 fps setting patched to match (off by default)
+e46151e0	ok	5	Merge fixup: clippy -D warnings for the code PRs #77, #106 and #69 brought (collapsible if, enumerate index used only in diagnostics, a cast to the same type)
+79fac1ac	ok	0	Merge triage/prs: 33 pull requests of avatarmanz/VIctory-7900XTX reviewed and merged (reports/TRIAGE-PRS-ISSUES.md)
+a12870aa	ok	8	Merge eval/coolfox: the AMD-safe parts of codec-d/cool_fox (two-plane compose for Series S, TablePlan, barrier fix; residency, fallback heaps, XMA refill behind switches, off) (reports/COOLFOX-EVAL.md)
+0ce46d5a	ok	3	Two-plane compose on by default (VICTORY_PLANES=0 turns it off): it acts only when a second plane is presented
+08b88b82	ok	5	Frame rate switch: the timers' shortest step follows the rate too (+0x2241fd0)
+b4ba4bbb	ok	7	Light and texture probes; the stand-in's slow mean by the clock (VICTORY_AMBIENT_SETTLE, off)
+bf7833a9	ok	3	Light probe: the lux program only with VICTORY_LIGHT_PROBE_LUX=1 (run light-21 lost the device in that pass); texture times split by waits for memory
+722c0e1c	ok	6	Merge port/fps: frame rate unlock (VICTORY_FRAME_INTERVAL_MS, off by default): our pacing and the title's three reads of its 30 fps target, byte-checked; game clock stays 1.00x (reports/FPS-UNLOCK.md)
+9386b828	ok	9	Textures: a store of larger levels by the bytes of the smaller ones (VICTORY_TEXTURE_STORE=<folder>, off); looks at slots waiting for memory by the clock (VICTORY_TEXTURE_LOOK_MS, off)
+7e82cf51	ok	3	Texture store: detile, digest and write on its own thread (run light-23: walking frames ~10 ms slower with it on the refresh threads); store fills count as shown whole

@@ -46,8 +46,8 @@ Wine/vkd3d-proton remains the fallback while this is built.
 - FP32 FMA is reportedly throttled on this part (community reports, unverified here). Implemented:
   `VICTORY_NO_FMA=1|0` (unset: on when the adapter name contains "CMP") writes every console
   multiply-add as a separate multiply and add (`fmad` in victory-shader), and is part of the shader cache key.
-  Unverified: whether NVIDIA's driver compiler fuses the pair back into one FMA (DXIL has no way
-  to forbid it except `precise` marking, not added yet). Measure with and without on the card;
+  The emitted float ops carry no fast-math flags (strict in DXIL), so a correct driver should not
+  fuse the pair back; unverified on the card. Measure with and without on the card;
   delete the shader cache between runs only if `host_settings` was not changed.
 - No RT cores: keep `-RayTracing` off. Mesh shaders and SM 6.6 through vkd3d-proton on that driver are unconfirmed.
 - Nothing here was run on the card.
@@ -55,3 +55,7 @@ Wine/vkd3d-proton remains the fallback while this is built.
 ## Cross-check of the last 40 commits (docs/cross-check-report.txt)
 39 pass. `e8d3d918` fails (`host.rs:8721` uses `Presenter.panel`, which does not exist in that
 commit): it is not bisectable; its merge `455f4d6d` onward is fine.
+
+## CI
+`.github/workflows/ci.yml`: `cross-check` (Linux, type-checks for Windows on every push),
+`build-exe` (Windows release build) and `deb` (packages that exe as `victory-wine_*.deb`, artifact).

@@ -276,3 +276,23 @@ c83e54c8	ok	8	Ranges asked ahead found by halving, not one by one
 d0aaed0f	ok	8	GPU tests: fall back to 1,000,000 view descriptors in replay_big on capped adapters (#116)
 dd67ae73	ok	2	GPU: back host sampler heaps with 2,048 slots and reserve slot 2,047 as null sentinel
 8211226a	ok	3	Report storage quota errors when save usage cannot be read
+e70e031c	ok	8	Shaders: native code stored without its XBCH wrapper (XDAT kind 0x0c)
+027e367a	ok	5	Shaders and GPU: the address of a view picked at a computed index, from the host
+2ee5d5fd	ok	9	Run default and diagnostics tests independently of Clippy
+86dc1097	ok	7	Renderer port 1: the title's 32-bit graphics heap used in place (VICTORY_PORT_CONSTANTS=1, off by default)
+0dc5d1be	ok	6	Shaders: one interpolation mode per signature row (after VIctory 13091f6e)
+41d3184e	ok	3	Shaders: a level query takes no array slice (after VIctory 13091f6e)
+4b82f6c2	ok	6	Renderer port 1: the 32-bit heap's pages get their section's slices in address order
+9c23e8dd	ok	1	Renderer port 1: know the 32-bit heap by the kind the title really asks with
+9a0843d4	ok	6	Shaders: hardware test for the s_cmpk_* scalar comparisons (#1046)
+6fac561e	ok	3	Shaders: add SQ_IMG_SAMP LOD-bias and no-mip range tests for emit/sampler.rs (#1195)
+2d30943e	ok	4	Shaders: walk a live set's registers a bit at a time (#1833)
+0fbec7e1	ok	3	Shaders: test s_bfe_u32 and s_bfe_i32 literal, width, and SCC cases (#2060)
+c6ff045f	ok	6	Report warm worker startup failures without marking pipelines as bad
+e9b12e0b	ok	2	Correct the required switches for three opt-in upcheck tests
+d1f883ec	ok	6	Shaders: mask operations on a joined number, read as data, are its number
+9997d255	ok	7	Renderer port 2: the title's descriptor record stores tell their slots (VICTORY_PORT_DESCRIPTORS=1, off by default)
+2ed81dc3	ok	4	Distinguish named and ordinal imports in census missing reports
+1162d38f	ok	6	Shader cache: keyed by a translator version, not its source
+4cb90bee	ok	7	Renderer port 2: the title's memcpy/memmove mark the view records they copy into the heap; misses of draws' tables counted apart
+f4b48ad7	ok	12	Publish the pareto-residency Windows build and portable launcher

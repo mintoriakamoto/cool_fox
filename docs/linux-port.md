@@ -45,6 +45,6 @@ Wine/vkd3d-proton remains the fallback while this is built.
 - No RT cores: keep `-RayTracing` off; mesh-shader and SM 6.6 support must be confirmed
   through vkd3d-proton on that driver.
 
-## Cross-check of the last 40 commits (docs/cross-check-report.tsv)
+## Cross-check of the last 40 commits (docs/cross-check-report.txt)
 39 pass. `e8d3d918` fails (`host.rs:8721` uses `Presenter.panel`, which does not exist in that
 commit): it is not bisectable; its merge `455f4d6d` onward is fine.

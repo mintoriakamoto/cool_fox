@@ -6,7 +6,7 @@
 set -u
 repo=$(git rev-parse --show-toplevel)
 range=${1:-"-n 30 HEAD"}
-out=${OUT:-$repo/cross-check-report.tsv}
+out=${OUT:-$repo/cross-check-report.txt}
 wt=$(mktemp -d)/wt
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$repo/target/cross-check}
 git -C "$repo" worktree add --detach "$wt" HEAD >/dev/null

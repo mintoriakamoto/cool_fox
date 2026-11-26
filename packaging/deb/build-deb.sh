@@ -7,7 +7,7 @@ exe=${1:?path to victory.exe}; ver=${2:-0.1.0}
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(mktemp -d)/victory-wine_${ver}_amd64
 install -Dm755 "$exe"            "$root/opt/victory/victory.exe"
-install -Dm755 "$here/victory-linux" "$root/usr/bin/victory-linux"
+install -Dm755 "$here/victory-linux.sh" "$root/usr/bin/victory-linux"
 install -Dm644 "$here/../../LICENSE" "$root/usr/share/doc/victory-wine/copyright"
 install -Dm644 "$here/../../victory.example.toml" "$root/etc/victory/victory.example.toml"
 mkdir -p "$root/DEBIAN"

@@ -151,3 +151,11 @@ ac11bbbe	ok	8	Pages are mapped by sixteen threads while the title streams as fas
 7da523a9	ok	8	The stand-in for the indirect light can bound what the air scatters (VICTORY_AMBIENT_AIR, off)
 a9896686	ok	7	Passes over the screen have pipeline workers and a wait of their own (VICTORY_SCREEN_WAIT_MS=0: not); after Belobug 18e57db8
 72f7f132	ok	8	Ray tracing document: the stand-in, the sizes, what is known
+6c17ce98	ok	8	Host heaps' slots are made under locks of their own; the heaps' records and the buffer views picked by index are made on several threads (VICTORY_VIEW_THREADS)
+073d2d5b	ok	6	The panel shows what helps, and what it costs; nothing but a key asked for while it is off
+d79ec0eb	ok	2	Two measurements for placing memory: bytes over the bus by host copy, and what the title asks its memory to be
+f19e55b8	ok	6	The title's writes into guarded blocks go in beside the guard: its memcpy, memmove and memset (VICTORY_COPY_BESIDE=1) and single stores that fault (VICTORY_STORE_BESIDE=1); both off
+20b98342	ok	8	Max, min, legacy products, medians and fractions as the RDNA card's own (VICTORY_RDNA_FLOAT, on; 0: spelled out as before)
+6912fb1d	ok	0	Frame replay: shaders of another translation (--retranslate, --shaders, --shaders-b turn by turn), times per pass as medians
+7c607d63	ok	8	Merge day/submit: the panel, parts of submissions prepared as one (VICTORY_JOIN_PARTS, off), fills cut free of copies
+9e731417	FAIL	6	Merge day/textures

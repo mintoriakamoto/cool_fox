@@ -84,8 +84,16 @@ variants, integer-target blending off). Already here: 921d8d3, ab34a8b. Not take
 and the CMP card has no ray-tracing hardware); 4775e8a and 2e01ab4 (tests of code we do not have); 7d73e2b (our cache
 already retries temp-file collisions). Its NVIDIA advice (untested by them): ray tracing off (`--no-rt`), FSR 4 off.
 
-## What the Linux launcher reads from the machine (`victory-linux --print-env`)
-GPU name, VRAM, PCIe generation and width (`nvidia-smi`), RAM and swap (`/proc/meminfo`). From them: texture staging
-per frame, DirectStorage staging (128 MiB at 32 GB of RAM or less, else 256), and warnings when swap is under 16 GB,
-VRAM is under 16 GB, or no NVIDIA card is found. Anything you export yourself (`VICTORY_*`) wins. Tested with a stubbed
-`nvidia-smi`; not run on the machine.
+## Launchers: auto-tuning on Linux and Windows
+
+### Linux: `victory-linux --print-env`
+Reads GPU name, VRAM, PCIe generation and width from `nvidia-smi`, RAM and swap from `/proc/meminfo`.
+From those: computes texture staging per frame and DirectStorage staging (128 MiB at ≤32 GB RAM, else 256);
+warns if swap < 16 GB, VRAM < 16 GB, or no NVIDIA card is found. Any VICTORY_* you export wins.
+Tested with stubbed `nvidia-smi`; not run on the machine.
+
+### Windows: `Play-VIctory.cmd` or `powershell -ExecutionPolicy Bypass -File Play-VIctory.ps1 --print-env`
+PowerShell auto-tuner reads GPU from Win32_VideoController (or `nvidia-smi` if installed/available), VRAM, PCIe specs,
+and system RAM. Same logic as Linux: calculates texture and DirectStorage staging, enables all Belobug ports
+(except PORT_CBV), sets VICTORY_NO_FMA for CMP cards if present, warns on low VRAM/paging. The .cmd wrapper
+passes through to the .ps1 script; use either. `--print-env` shows choices without running the game.

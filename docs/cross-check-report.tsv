@@ -1,0 +1,41 @@
+commit	result	seconds	subject
+b7ab9c49	ok	61	The title's pipelines written down (VICTORY_PIPELINE_BOOK=1, off) and made ahead of a run, each batch in a process of its own (victory warm)
+c9b3f45a	ok	11	The panel is drawn by the diagnostics build only
+79615b78	ok	1	Merge day/textures
+e8d3d918	FAIL	2	Look-first stubs for moves and vector stores (VICTORY_WRITE_SITES); descriptors copied onto themselves are not written (VICTORY_SAME_RECORDS=0: they are); of tracked pages the parts written are taken (VICTORY_TAKE_PARTS=0: pages); waits for the trackers' locks and the heap sync's parts counted
+455f4d6d	ok	3	Merge branch 'local/next' into day/faults
+9ab73028	ok	3	Test of parts taken: other tests' notes at the address
+f4cc8d8b	ok	10	Structure builder: the wait for sizes is off (VICTORY_BVH_SIZES_WAIT=1 turns it on): it mended nothing and costs some 20 ms a frame (light-15)
+c3e643eb	ok	12	Sets of heap slots are bits, the heaps' records have threads of their own, what is mirrored of them is counted
+091151c6	ok	2	Merge day/light
+95037baf	ok	1	Revert "Replay: buffers in heaps opened from memory are made again (without the cross-adapter flag)"
+b6202840	ok	3	Title bytes under flights' writes compared with AVX2 on threads of their own, the pairs sent up made on them; helpers that work ahead are not kept on the fast cores
+a30829c4	ok	11	Pipelines known to take long are made beside the others, by a quarter of the workers (VICTORY_PIPELINE_SLOW=0: in the order created)
+689df313	ok	11	Views mapped beside guarded ones: all views of the page are opened together, under the lock
+30f7859b	ok	7	Copies in the card's memory: the changed runs sorted once and stably, piece runs joined while built; steps on the card: slots made on several threads
+b46de36d	ok	3	Merge branch 'local/next' into day/faults
+5491ac78	ok	8	The pages shaders' writes were put into are noted without a lock
+23925a4a	ok	8	Textures shaders write that the title reads on the CPU are copied back into title memory (from fxceless f5c03f3b, pull request 999: Geckomacabre 895c0b8f, 04df4350); on by default
+2be0515c	ok	2	Views mapped beside guarded ones: all views of the page are opened together, under the lock
+35bd0114	ok	5	Merge local/next into day/shaders; pipeline workers are all woken
+53abe45a	ok	4	wip wide
+393e74fb	ok	5	Merge local/next into day/shaders
+17c4717b	ok	6	Title buffers' copies down to any size in the card's memory (VICTORY_CARD_BUFFERS_MIN_KB), the card's hashes over the buffer's own bytes (both after fxceless c36971b2)
+d9068305	ok	8	Merge branch 'day/faults' into local/next
+b32fb997	ok	3	A range shaders write is declared once until the list next writes title memory (from Belobug dd799aad, romainhedouin); VICTORY_DECLARE_ONCE=0 for the old way
+ab86ef7f	ok	4	A pipeline a list binds again is not kept and named again (from Belobug 92d353f8, romainhedouin)
+c96525db	ok	5	A root constant buffer not 256-byte aligned is copied into scratch memory once for the draws of a list that bind it (from Belobug 84ea9c12, romainhedouin)
+ca1d519f	ok	3	The same render targets are not set again (after ZJOU acf478b8, author local); VICTORY_BIND_CACHE=0 sets them every time
+449830f6	ok	4	The frame line says how many indirect records ran empty for want of their list's budget, and the largest cost; VICTORY_INDIRECT_REST=0: a record that does not fit takes nothing from the ones after it
+200a9cc5	ok	10	Scalar buffer loads four dwords a call (VICTORY_SHADER_OPT=127; off): fxceless c36971b2's shader part
+44629de2	ok	10	Heaps' records copied as bytes: pages read, compared and sorted out on several threads, empty slots that show nothing left alone; pages of places read by steps on the card asked about once
+5bf49062	ok	6	Merge branch 'day/shaders' into local/next
+57e55d06	ok	5	Merge commit '449830f6' into local/next
+3b30d6f2	ok	0	README, findings and a start script of this fork; fxceless' README kept in docs; the translator's file may be 640 KiB
+0a435665	ok	0	README: where it is cloned from
+e05d4633	ok	9	Merge VIctory-7900XTX (0a43566) with RTX 5090 fidelity & 32 GB RAM optimizations: two-plane compose, fallback heaps, TablePlan, residency guard, 256 MiB DirectStorage, and WaitOnAddress fence wakes
+1ad6e67a	ok	3	Fix Series S two-plane black screen by reading RetailPlane at 72-byte stride
+8cc31ab3	ok	12	Port NVIDIA Wave32 lowering, smooth movie-plane uploads, XMA audio fixes, and 32GB RAM residency budgets
+18bdf793	ok	8	Scope bindless refreshes to their heap and bound speculative staging
+ab75ac3e	ok	3	Back off refused GPU pool growth and defer uploads under low commit
+f4b48ad7	ok	11	Publish the pareto-residency Windows build and portable launcher

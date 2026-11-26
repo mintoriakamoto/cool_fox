@@ -11,5 +11,7 @@ export VKD3D_FILTER_DEVICE_NAME=${VKD3D_FILTER_DEVICE_NAME:-NVIDIA}
 export VKD3D_FEATURE_LEVEL=12_2 VKD3D_CONFIG=${VKD3D_CONFIG:-no_upload_hvv}
 # 10 GB card behind a narrow PCIe link, 32 GB RAM: upload ahead, never wait on a texture.
 export VICTORY_UPLOAD_AHEAD=${VICTORY_UPLOAD_AHEAD:-1} VICTORY_TEXTURE_NO_WAIT=${VICTORY_TEXTURE_NO_WAIT:-1}
+# Narrow PCIe link: ~64 MiB of texture staging a frame (code default 128 MiB on 32 GB RAM); raise it if the link is x16.
+export VICTORY_TEXTURE_STAGE_MB=${VICTORY_TEXTURE_STAGE_MB:-64}
 export VICTORY_CACHE_DIR=${VICTORY_CACHE_DIR:-$HOME/.cache/victory}
 exec wine /opt/victory/victory.exe run "$(winepath -w "$VICTORY_GAME_DIR")/game_scarlett_master.exe" --console series-s --execute "$@"

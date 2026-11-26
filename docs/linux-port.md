@@ -42,12 +42,13 @@ Wine/vkd3d-proton remains the fallback while this is built.
   (Wine commit is backed by overcommit, but the page cache and the title's mappings still need headroom).
 - The PCIe link of this card is narrow, so textures cannot be streamed freely: with 10 GB of VRAM the
   working set will not stay resident. Keep upload-ahead on, but keep per-frame staging small
-  (`staging_budget_per_frame`, `texture_floor_bytes`, `default_card_limits_mb` all scale with the
-  VRAM budget; add a <=12 GB tier and measure on the card). Expect texture pop-in before frame rate.
+  (the code already scales with the VRAM budget, and caps staging at 128 MiB a frame on 32 GB RAM).
+  The launcher sets `VICTORY_TEXTURE_STAGE_MB=64`; tune it on the card. Expect texture pop-in before frame rate.
+- Swap (reported 40 GB) keeps the title from being killed at 40-46 GB; put it on NVMe, not zram.
 - FP32 FMA is reportedly throttled on this part (community reports, unverified here): emit separate
   mul+add instead of `Fma` in victory-shader behind a cache-keyed `VICTORY_NO_FMA` switch, after a test on the card.
 - No RT cores: keep `-RayTracing` off. Mesh shaders and SM 6.6 through vkd3d-proton on that driver are unconfirmed.
-- Not implemented yet: the VRAM tier, the FMA switch. Nothing here was run on the card.
+- Not implemented yet: the FMA switch. Nothing here was run on the card.
 
 ## Cross-check of the last 40 commits (docs/cross-check-report.txt)
 39 pass. `e8d3d918` fails (`host.rs:8721` uses `Presenter.panel`, which does not exist in that

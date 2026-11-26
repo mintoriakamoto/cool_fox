@@ -9924,6 +9924,52 @@ impl Host {
             let presented = p.meter.record_present(p.hwnd, status);
             showing.end();
             if !presented { return None; }
+
+            // Record profiling frame
+            #[cfg(windows)]
+            {
+                static FRAME_TIMES: std::sync::Mutex<crate::metrics::FrameTimeHistory> =
+                    std::sync::Mutex::new(crate::metrics::FrameTimeHistory::new());
+                static LAST_FRAME: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                use std::time::Instant;
+
+                let now = Instant::now().elapsed().as_millis() as u64;
+                let frame_time_ms = now.saturating_sub(LAST_FRAME.load(std::sync::atomic::Ordering::Relaxed)) as f32;
+                LAST_FRAME.store(now, std::sync::atomic::Ordering::Relaxed);
+
+                // Update frame time history
+                if let Ok(mut history) = FRAME_TIMES.lock() {
+                    history.record_frame_time(frame_time_ms);
+
+                    // Collect system metrics
+                    let metrics = crate::metrics::SystemMetrics::collect();
+
+                    // Create profiling frame
+                    let mut prof_frame = crate::profiler::ProfileFrame::new();
+                    prof_frame.fps = history.average_fps();
+                    prof_frame.frame_time_ms = frame_time_ms;
+                    prof_frame.gpu_load_percent = metrics.gpu_load_percent;
+                    prof_frame.vram_used_mb = metrics.vram_used_mb;
+                    prof_frame.vram_total_mb = metrics.vram_total_mb;
+                    prof_frame.cpu_load_percent = metrics.cpu_load_percent;
+                    prof_frame.gpu_temp_celsius = metrics.gpu_temp_celsius;
+
+                    // Detect anomalies
+                    if prof_frame.fps < (history.average_fps() * 0.7) {
+                        prof_frame.alerts.push(format!("fps_drop: {} < {}", prof_frame.fps as u32, (history.average_fps() * 0.7) as u32));
+                    }
+                    if prof_frame.vram_used_mb as f32 > prof_frame.vram_total_mb as f32 * 0.95 {
+                        prof_frame.alerts.push("vram_critical_95_percent".to_string());
+                    }
+                    if prof_frame.gpu_temp_celsius > 85.0 {
+                        prof_frame.alerts.push(format!("gpu_temp_high: {}C", prof_frame.gpu_temp_celsius as u32));
+                    }
+
+                    // Record the frame
+                    crate::profiler::record_frame(prof_frame);
+                }
+            }
+
             #[cfg(feature = "diagnostics")]
             return Some(probe.is_some_and(|b| crate::capture::black(&b)));
             #[cfg(not(feature = "diagnostics"))]

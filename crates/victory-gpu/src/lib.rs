@@ -109,6 +109,10 @@ mod upload;
 mod watch;
 #[cfg(windows)]
 mod texback;
+#[cfg(windows)]
+pub mod profiler;
+#[cfg(windows)]
+pub mod metrics;
 
 #[cfg(windows)]
 pub use host::on_failure;

@@ -89,7 +89,8 @@ already retries temp-file collisions). Its NVIDIA advice (untested by them): ray
 ### Linux: `victory-linux --print-env`
 Reads GPU name, VRAM, PCIe generation and width from `nvidia-smi`, RAM and swap from `/proc/meminfo`.
 From those: computes texture staging per frame and DirectStorage staging (128 MiB at ≤32 GB RAM, else 256);
-warns if swap < 16 GB, VRAM < 16 GB, or no NVIDIA card is found. Any VICTORY_* you export wins.
+sets vkd3d-proton tuning (`VKD3D_SHADER_CACHE_SIZE` to 32× texture stage, `VKD3D_MAX_FRAME_LATENCY=1` for tight pipeline);
+warns if swap < 16 GB, VRAM < 16 GB, or no NVIDIA card is found. Any VICTORY_* or VKD3D_* you export wins.
 Tested with stubbed `nvidia-smi`; not run on the machine.
 
 ### Windows: `Play-VIctory.cmd` or `powershell -ExecutionPolicy Bypass -File Play-VIctory.ps1 --print-env`

@@ -170,3 +170,4 @@ e162982e	ok	7	What a landing put into title memory is not sent up again (VICTORY
 158b9aa3	ok	8	The image's name is kept for VICTORY_WRITE_SITES (the program did not build)
 0da08dfe	FAIL	7	Merge day/faults
 61a9b884	FAIL	6	Merge day/light
+01e1f525	FAIL	8	Merge day/shaders

@@ -35,6 +35,14 @@ if not defined VICTORY_JOIN_PARTS set "VICTORY_JOIN_PARTS=8"
 if not defined VICTORY_UPLOAD_AHEAD set "VICTORY_UPLOAD_AHEAD=1"
 if not defined VICTORY_LEVELS_ON_DEMAND set "VICTORY_LEVELS_ON_DEMAND=1"
 if not defined VICTORY_CARD_BUFFERS_MIN_KB set "VICTORY_CARD_BUFFERS_MIN_KB=64"
+rem Belobug's renderer ports (CPU-side, byte-checked patches); measured on AMD only, untested on NVIDIA: set any to 0 to turn it off.
+if not defined VICTORY_PORT_CONSTANTS set "VICTORY_PORT_CONSTANTS=1"
+if not defined VICTORY_PORT_DESCRIPTORS set "VICTORY_PORT_DESCRIPTORS=1"
+if not defined VICTORY_PORT_GUARD set "VICTORY_PORT_GUARD=1"
+if not defined VICTORY_PORT_JOURNAL set "VICTORY_PORT_JOURNAL=1"
+rem VICTORY_PORT_CBV (shaders read constant buffers as raw bytes) stays off until tried on the card.
+rem FSR 4 is an AMD RDNA 4 upscaler.
+if not defined VICTORY_FSR_4K set "VICTORY_FSR_4K=0"
 if not defined VICTORY_LOG if not defined RUST_LOG set "VICTORY_LOG=warn"
 "%runner%" run "%VICTORY_GAME_DIR%\game_scarlett_master.exe" --console series-s --execute
 exit /b %errorlevel%

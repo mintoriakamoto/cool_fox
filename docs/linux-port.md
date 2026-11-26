@@ -59,3 +59,18 @@ commit): it is not bisectable; its merge `455f4d6d` onward is fine.
 ## CI
 `.github/workflows/ci.yml`: `cross-check` (Linux, type-checks for Windows on every push),
 `build-exe` (Windows release build) and `deb` (packages that exe as `victory-wine_*.deb`, artifact).
+
+## Belobug merge and the AMD -> NVIDIA map
+Merged `Belobug/VIctory-Belobug-AMD` (a-publier): renderer ports 5-7, texture upload in the submission prelude,
+frame-rate unlock, output size switches. Conflict choices: Belobug's texture upload and `draw.rs` taken whole (our
+movie-plane and synchronous bake uploads are gone: video rings now go through the prelude refresh); residency, XMA refill,
+SWEEP_PER_HEAP and FALLBACK_HEAPS stay ON by default (Belobug has them off); our `VICTORY_NO_FMA`, CI and packaging kept;
+lane-uniform analysis is Belobug's. Type-checks for Windows, 210 shader tests pass on Linux, **nothing ran on a GPU**.
+
+| AMD-only piece | On NVIDIA |
+|---|---|
+| RDNA float shortcuts (`set_host_rdna`) | not used; generic code |
+| `emulate_amd_only` (CPU `mwaitx`, `rdpru`) | already emulated for any CPU |
+| Indirect dispatch widened past 65,535 groups (`indirect::amd`) | not available: D3D12 caps groups per dimension on NVIDIA; large dispatches stay cut (open) |
+| FSR 4 upscaler (`VICTORY_FSR_4K`) | off; it needs an RDNA 4 card. DLSS needs NVIDIA's SDK (not added) |
+| `VICTORY_PORT_*` (off in Belobug's builds) | on in our launchers except `PORT_CBV` (GPU-side, try it by hand) |

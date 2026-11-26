@@ -13,5 +13,8 @@ export VKD3D_FEATURE_LEVEL=12_2 VKD3D_CONFIG=${VKD3D_CONFIG:-no_upload_hvv}
 export VICTORY_UPLOAD_AHEAD=${VICTORY_UPLOAD_AHEAD:-1} VICTORY_TEXTURE_NO_WAIT=${VICTORY_TEXTURE_NO_WAIT:-1}
 # Narrow PCIe link: ~64 MiB of texture staging a frame (code default 128 MiB on 32 GB RAM); raise it if the link is x16.
 export VICTORY_TEXTURE_STAGE_MB=${VICTORY_TEXTURE_STAGE_MB:-64}
+# Belobug's renderer ports (untested on NVIDIA; =0 turns one off). PORT_CBV stays off.
+export VICTORY_PORT_CONSTANTS=${VICTORY_PORT_CONSTANTS:-1} VICTORY_PORT_DESCRIPTORS=${VICTORY_PORT_DESCRIPTORS:-1}
+export VICTORY_PORT_GUARD=${VICTORY_PORT_GUARD:-1} VICTORY_PORT_JOURNAL=${VICTORY_PORT_JOURNAL:-1} VICTORY_FSR_4K=${VICTORY_FSR_4K:-0}
 export VICTORY_CACHE_DIR=${VICTORY_CACHE_DIR:-$HOME/.cache/victory}
 exec wine /opt/victory/victory.exe run "$(winepath -w "$VICTORY_GAME_DIR")/game_scarlett_master.exe" --console series-s --execute "$@"

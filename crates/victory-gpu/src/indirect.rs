@@ -293,6 +293,20 @@ pub(crate) fn amd(device: &ID3D12Device) -> bool {
     }
 }
 
+/// The adapter's description (its marketing name) for `device`.
+pub(crate) fn adapter_name(device: &ID3D12Device) -> Option<String> {
+    use windows::Win32::Graphics::Dxgi::{CreateDXGIFactory2, DXGI_CREATE_FACTORY_FLAGS, IDXGIAdapter1, IDXGIFactory4};
+    // SAFETY: plain queries.
+    let desc = unsafe {
+        CreateDXGIFactory2::<IDXGIFactory4>(DXGI_CREATE_FACTORY_FLAGS(0))
+            .and_then(|f| f.EnumAdapterByLuid::<IDXGIAdapter1>(device.GetAdapterLuid()))
+            .and_then(|a| a.GetDesc1())
+            .ok()?
+    };
+    let end = desc.Description.iter().position(|&c| c == 0).unwrap_or(desc.Description.len());
+    Some(String::from_utf16_lossy(&desc.Description[..end]))
+}
+
 /// Whether a record that does not fit in what is left of its list's budget
 /// takes the rest, so that every record after it runs empty too
 /// (`VICTORY_INDIRECT_REST=1`; off by default so one oversized record takes

@@ -1124,8 +1124,47 @@ fn own_bits_on() -> bool {
 /// What the translator was told of the host, for a cache's key: the widest
 /// wave, the view heap's limit, where the raw twins of its views start, and
 /// what it writes for the console's own hardware.
-pub fn host_settings() -> [u32; 4] {
-    [host_max_wave(), super::shader::view_heap_limit(), super::shader::raw_views(), host_rdna()]
+pub fn host_settings() -> [u32; 5] {
+    [
+        host_max_wave(),
+        super::shader::view_heap_limit(),
+        super::shader::raw_views(),
+        host_rdna(),
+        u32::from(no_fma()),
+    ]
+}
+
+static HOST_NO_FMA: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Tells the translator that the host's fused multiply-add is slow (NVIDIA CMP
+/// mining cards run FP32 FMA throttled; a separate multiply and add are not):
+/// [`no_fma`].
+pub fn set_host_no_fma(on: bool) {
+    HOST_NO_FMA.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[cfg(test)]
+thread_local! {
+    /// A test's choice for [`no_fma`], for its thread only.
+    pub(super) static TEST_NO_FMA: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
+}
+
+/// Whether the console's multiply-adds (`v_fma_*`, `v_fmac_*`, `v_mad_*` of f32 and f16) are
+/// written as a multiply and an add instead of DXIL's FMad, which a driver turns into one fused
+/// instruction. `VICTORY_NO_FMA=1` forces it on, `0` off; unset, it follows [`set_host_no_fma`]
+/// (the device layer sets it for a card named CMP). The result differs from the fused one in the
+/// last bit, as the console's own `v_mad_f32` (not fused) already does. Part of the translation:
+/// the shader cache keys on it ([`host_settings`]).
+pub(super) fn no_fma() -> bool {
+    #[cfg(test)]
+    if let Some(on) = TEST_NO_FMA.get() {
+        return on;
+    }
+    match std::env::var("VICTORY_NO_FMA").ok().as_deref().map(str::trim) {
+        Some("1") => true,
+        Some("0") => false,
+        _ => HOST_NO_FMA.load(std::sync::atomic::Ordering::Relaxed),
+    }
 }
 
 static HOST_RDNA: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -3747,6 +3786,11 @@ impl<'a> Lower<'a> {
     }
 
     fn fmad(&mut self, a: V, b: V, c: V) -> V {
+        if no_fma() {
+            let cur = self.cur;
+            let product = self.s.m.bin(cur, Bin::Mul, a, b);
+            return self.s.m.bin(cur, Bin::Add, product, c);
+        }
         self.s.op(
             self.cur,
             "tertiary.f32",

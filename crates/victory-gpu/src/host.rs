@@ -939,6 +939,10 @@ fn create() -> windows::core::Result<Host> {
             // (RDNA has waves of 32 and 64, the vendor's older cards of 64 alone.)
             let amd = crate::indirect::amd(&device);
             victory_shader::emit::set_host_rdna(amd && o1.WaveLaneCountMin == 32 && o1.WaveLaneCountMax == 64);
+            // NVIDIA's CMP cards (mining, no display) run FP32 FMA throttled: multiply and add apart.
+            let cmp = crate::indirect::adapter_name(&device).is_some_and(|n| n.to_ascii_uppercase().contains("CMP"));
+            tracing::info!(cmp, "host: FMA written as multiply and add");
+            victory_shader::emit::set_host_no_fma(cmp);
         }
         let messages = debug
             .then(|| device.cast::<ID3D12InfoQueue>().ok())

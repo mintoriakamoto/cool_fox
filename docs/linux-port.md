@@ -43,10 +43,14 @@ Wine/vkd3d-proton remains the fallback while this is built.
   (card buffers up to 8 GiB, 384 MiB staging a frame, capped to 128 MiB by the 32 GB RAM rule).
 - The PCIe link of this card is narrow: keep textures resident once uploaded rather than streaming.
   The launcher sets `VICTORY_TEXTURE_STAGE_MB=64` so the first fill is smooth; tune it on the card.
-- FP32 FMA is reportedly throttled on this part (community reports, unverified here): emit separate
-  mul+add instead of `Fma` in victory-shader behind a cache-keyed `VICTORY_NO_FMA` switch, after a test on the card.
+- FP32 FMA is reportedly throttled on this part (community reports, unverified here). Implemented:
+  `VICTORY_NO_FMA=1|0` (unset: on when the adapter name contains "CMP") writes every console
+  multiply-add as a separate multiply and add (`fmad` in victory-shader), and is part of the shader cache key.
+  Unverified: whether NVIDIA's driver compiler fuses the pair back into one FMA (DXIL has no way
+  to forbid it except `precise` marking, not added yet). Measure with and without on the card;
+  delete the shader cache between runs only if `host_settings` was not changed.
 - No RT cores: keep `-RayTracing` off. Mesh shaders and SM 6.6 through vkd3d-proton on that driver are unconfirmed.
-- Not implemented yet: the FMA switch. Nothing here was run on the card.
+- Nothing here was run on the card.
 
 ## Cross-check of the last 40 commits (docs/cross-check-report.txt)
 39 pass. `e8d3d918` fails (`host.rs:8721` uses `Presenter.panel`, which does not exist in that

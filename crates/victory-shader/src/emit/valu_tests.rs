@@ -2391,3 +2391,24 @@ fn typed_non_d16_table_load_preserves_integer_bits() {
         }
     }
 }
+
+/// `VICTORY_NO_FMA` / `set_host_no_fma`: the console's fused multiply-add is written as a multiply
+/// and an add (a different translation, so a different cache key), and only when asked.
+#[test]
+fn no_fma_writes_a_multiply_and_an_add() {
+    let body = vop3(0x14b, 0, vgpr(1), vgpr(2), vgpr(3));
+    let written = |on: bool| {
+        lower::TEST_NO_FMA.set(Some(on));
+        let shader = build_valu_cs(&body);
+        lower::TEST_NO_FMA.set(None);
+        shader.dxil
+    };
+    let (fused, apart) = (written(false), written(true));
+    assert_ne!(fused, apart, "v_fma_f32 written alike with and without no_fma");
+    assert_eq!(fused, written(false), "the fused translation is not stable");
+    lower::TEST_NO_FMA.set(Some(true));
+    assert_eq!(super::host_settings()[4], 1);
+    lower::TEST_NO_FMA.set(Some(false));
+    assert_eq!(super::host_settings()[4], 0);
+    lower::TEST_NO_FMA.set(None);
+}

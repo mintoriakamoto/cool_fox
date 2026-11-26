@@ -34,16 +34,20 @@ Order of work: (1) platform trait for memory/threads/exceptions in victory-loade
 victory-gpu, Vulkan backend behind it, (4) hle host-passthrough off kernel32.
 Wine/vkd3d-proton remains the fallback while this is built.
 
-## CMP 170HX / big-VRAM specifics (not yet implemented)
-- Compute-class GA100: no display engine -> present via iGPU (the launcher sets PRIME offload).
-- PCIe link is narrow (x4 class): uploads are the bottleneck, so with 40 GB make the
-  texture/upload budgets assume everything stays resident (`texture_floor_bytes`,
-  `staging_budget_per_frame`, `default_card_limits_mb` already scale with VRAM budget — add a >=32 GB tier).
-- FP32 FMA is throttled on this part (community reports; verify on hardware): emit
-  separate mul+add instead of `Fma` in victory-shader (a `VICTORY_NO_FMA` switch,
-  cache-keyed like `VICTORY_RDNA_FLOAT`).
-- No RT cores: keep `-RayTracing` off; mesh-shader and SM 6.6 support must be confirmed
-  through vkd3d-proton on that driver.
+## Your box: CMP 170HX-class, 10 GB VRAM, 32 GB DDR5 (corrects the earlier 40 GB assumption)
+- No display engine: render on the NVIDIA card, scan out through the motherboard HDMI (the launcher sets PRIME offload).
+- The README measured 40-46 GB of private memory for this title on a 64 GB PC. 32 GB RAM + 10 GB VRAM
+  is below that: use `--console series-s` (already the launcher default), the `pareto-residency`
+  settings (built for 32 GB RAM, see docs/bug-journal.md), and give the Linux box real swap/zram
+  (Wine commit is backed by overcommit, but the page cache and the title's mappings still need headroom).
+- The PCIe link of this card is narrow, so textures cannot be streamed freely: with 10 GB of VRAM the
+  working set will not stay resident. Keep upload-ahead on, but keep per-frame staging small
+  (`staging_budget_per_frame`, `texture_floor_bytes`, `default_card_limits_mb` all scale with the
+  VRAM budget; add a <=12 GB tier and measure on the card). Expect texture pop-in before frame rate.
+- FP32 FMA is reportedly throttled on this part (community reports, unverified here): emit separate
+  mul+add instead of `Fma` in victory-shader behind a cache-keyed `VICTORY_NO_FMA` switch, after a test on the card.
+- No RT cores: keep `-RayTracing` off. Mesh shaders and SM 6.6 through vkd3d-proton on that driver are unconfirmed.
+- Not implemented yet: the VRAM tier, the FMA switch. Nothing here was run on the card.
 
 ## Cross-check of the last 40 commits (docs/cross-check-report.txt)
 39 pass. `e8d3d918` fails (`host.rs:8721` uses `Presenter.panel`, which does not exist in that

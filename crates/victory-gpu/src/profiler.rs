@@ -106,6 +106,10 @@ impl RingBuffer {
 pub struct Profiler {
     ring_buffer: Mutex<RingBuffer>,
     named_pipe: Mutex<Option<NamedPipeWriter>>,
+    #[cfg(target_os = "linux")]
+    socket_listener: Mutex<SocketListener>,
+    #[cfg(target_os = "linux")]
+    connected_streams: Mutex<Vec<std::os::unix::net::UnixStream>>,
     enabled: AtomicBool,
     frame_count: AtomicU64,
     last_frame_time: Mutex<Option<Duration>>,
@@ -113,9 +117,19 @@ pub struct Profiler {
 
 impl Profiler {
     fn new() -> Self {
+        #[cfg(target_os = "linux")]
+        let socket_listener = SocketListener::new().unwrap_or_else(|_| SocketListener {
+            listener: None,
+            socket_path: format!("/tmp/victory-game-{}.sock", std::process::id()),
+        });
+
         Self {
             ring_buffer: Mutex::new(RingBuffer::new()),
             named_pipe: Mutex::new(None),
+            #[cfg(target_os = "linux")]
+            socket_listener: Mutex::new(socket_listener),
+            #[cfg(target_os = "linux")]
+            connected_streams: Mutex::new(Vec::new()),
             enabled: AtomicBool::new(should_profile()),
             frame_count: AtomicU64::new(0),
             last_frame_time: Mutex::new(None),
@@ -130,13 +144,45 @@ impl Profiler {
         let mut buffer = self.ring_buffer.lock().unwrap_or_else(|e| e.into_inner());
         buffer.push(frame.clone());
 
-        // Try to export to named pipe
-        if let Ok(mut pipe) = self.named_pipe.lock() {
-            if pipe.is_none() {
-                *pipe = NamedPipeWriter::new().ok();
+        // Windows: try to export to named pipe
+        #[cfg(windows)]
+        {
+            if let Ok(mut pipe) = self.named_pipe.lock() {
+                if pipe.is_none() {
+                    *pipe = NamedPipeWriter::new().ok();
+                }
+                if let Some(writer) = pipe.as_mut() {
+                    let _ = writer.write_frame(&frame);
+                }
             }
-            if let Some(writer) = pipe.as_mut() {
-                let _ = writer.write_frame(&frame);
+        }
+
+        // Linux: accept new connections and broadcast to all
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(listener) = self.socket_listener.lock() {
+                let new_streams = listener.accept_connections();
+                if !new_streams.is_empty() {
+                    if let Ok(mut streams) = self.connected_streams.lock() {
+                        streams.extend(new_streams);
+                    }
+                }
+            }
+
+            if let Ok(mut streams) = self.connected_streams.lock() {
+                use std::io::Write;
+
+                let json = match serde_json::to_string(&frame) {
+                    Ok(j) => j,
+                    Err(_) => return,
+                };
+                let mut line = json;
+                line.push('\n');
+
+                // Write to all connected streams, remove dead ones
+                streams.retain_mut(|stream| {
+                    stream.write_all(line.as_bytes()).is_ok()
+                });
             }
         }
 
@@ -158,45 +204,157 @@ impl Profiler {
     }
 }
 
+/// Unix socket listener for accepting launcher connections (Linux only)
+#[cfg(target_os = "linux")]
+struct SocketListener {
+    listener: Option<std::os::unix::net::UnixListener>,
+    socket_path: String,
+}
+
+#[cfg(target_os = "linux")]
+impl SocketListener {
+    fn new() -> std::io::Result<Self> {
+        let pid = std::process::id();
+        let socket_path = format!("/tmp/victory-game-{}.sock", pid);
+
+        // Remove stale socket
+        let _ = std::fs::remove_file(&socket_path);
+
+        match std::os::unix::net::UnixListener::bind(&socket_path) {
+            Ok(listener) => {
+                listener.set_nonblocking(true)?;
+                tracing::info!(socket = %socket_path, "profiler unix socket listener started");
+                Ok(Self {
+                    listener: Some(listener),
+                    socket_path,
+                })
+            }
+            Err(e) => {
+                tracing::warn!(socket = %socket_path, error = %e, "failed to bind unix socket");
+                Ok(Self {
+                    listener: None,
+                    socket_path,
+                })
+            }
+        }
+    }
+
+    fn accept_connections(&self) -> Vec<std::os::unix::net::UnixStream> {
+        let mut streams = Vec::new();
+        if let Some(ref listener) = self.listener {
+            while let Ok((stream, _)) = listener.accept() {
+                streams.push(stream);
+            }
+        }
+        streams
+    }
+}
+
 /// Named pipe writer for exporting profiling data to launcher
 #[cfg(windows)]
 struct NamedPipeWriter {
-    // Placeholder for Windows implementation
-    // Will use named pipes (\\.\pipe\victory-game-[PID])
+    pipe: Option<std::fs::File>,
+    pipe_name: String,
 }
 
 #[cfg(windows)]
 impl NamedPipeWriter {
     fn new() -> std::io::Result<Self> {
-        // Get the game process PID and create named pipe name
         let pid = std::process::id();
         let pipe_name = format!("\\\\.\\pipe\\victory-game-{}", pid);
 
-        // For now, we'll just create a stub that doesn't error
-        // Full implementation would create the named pipe server
-        // and listen for launcher connections
-
         tracing::info!(pipe = %pipe_name, "profiler named pipe ready");
-        Ok(Self {})
+        Ok(Self {
+            pipe: None,
+            pipe_name,
+        })
     }
 
     fn write_frame(&mut self, frame: &ProfileFrame) -> std::io::Result<()> {
-        // Serialize frame to JSON and write to named pipe
-        let json = serde_json::to_string(frame)?;
+        use std::io::Write;
 
-        // TODO: Implement actual named pipe writing
-        // For now, only log in debug builds
-        #[cfg(debug_assertions)]
-        tracing::trace!(frame = %json, "profiling frame");
+        // Serialize frame to JSON
+        let json = serde_json::to_string(frame)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        // Try to connect if not already connected
+        if self.pipe.is_none() {
+            if let Ok(file) = std::fs::OpenOptions::new()
+                .write(true)
+                .open(&self.pipe_name)
+            {
+                self.pipe = Some(file);
+            }
+        }
+
+        // Write frame to pipe if connected
+        if let Some(ref mut pipe) = self.pipe {
+            let mut line = json;
+            line.push('\n');
+
+            if pipe.write_all(line.as_bytes()).is_err() {
+                // Connection lost, reconnect on next frame
+                self.pipe = None;
+            }
+        }
 
         Ok(())
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+struct NamedPipeWriter {
+    stream: Option<std::os::unix::net::UnixStream>,
+    socket_path: String,
+}
+
+#[cfg(target_os = "linux")]
+impl NamedPipeWriter {
+    fn new() -> std::io::Result<Self> {
+        let pid = std::process::id();
+        let socket_path = format!("/tmp/victory-game-{}.sock", pid);
+
+        tracing::info!(socket = %socket_path, "profiler unix socket ready");
+        Ok(Self {
+            stream: None,
+            socket_path,
+        })
+    }
+
+    fn write_frame(&mut self, frame: &ProfileFrame) -> std::io::Result<()> {
+        use std::io::Write;
+        use std::os::unix::net::UnixStream;
+
+        // Serialize frame to JSON
+        let json = serde_json::to_string(frame)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        // Try to connect if not already connected
+        if self.stream.is_none() {
+            if let Ok(stream) = UnixStream::connect(&self.socket_path) {
+                self.stream = Some(stream);
+            }
+        }
+
+        // Write frame to socket if connected
+        if let Some(ref mut stream) = self.stream {
+            let mut line = json;
+            line.push('\n');
+
+            if stream.write_all(line.as_bytes()).is_err() {
+                // Connection lost, reconnect on next frame
+                self.stream = None;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 struct NamedPipeWriter;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "linux")))]
 impl NamedPipeWriter {
     fn new() -> std::io::Result<Self> {
         Ok(Self)

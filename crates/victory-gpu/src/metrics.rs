@@ -35,36 +35,33 @@ impl SystemMetrics {
     pub fn collect() -> Self {
         let mut metrics = Self::default();
 
-        #[cfg(windows)]
-        {
-            // Windows: Query NVIDIA driver directly
-            // For now, placeholder values
-            metrics.gpu_load_percent = 50.0;
-            metrics.vram_used_mb = 20000;
-            metrics.cpu_load_percent = 40.0;
-            metrics.gpu_temp_celsius = 65.0;
+        // Query nvidia-smi for GPU metrics (works on both Windows and Linux)
+        if let Some(nvidia_metrics) = query_nvidia_smi() {
+            metrics.gpu_load_percent = nvidia_metrics.gpu_load;
+            metrics.vram_used_mb = nvidia_metrics.vram_used;
+            metrics.vram_total_mb = nvidia_metrics.vram_total;
+            metrics.gpu_temp_celsius = nvidia_metrics.gpu_temp;
         }
 
         #[cfg(target_os = "linux")]
         {
-            // Linux: Query nvidia-smi and /proc
-            if let Some(nvidia_metrics) = query_nvidia_smi() {
-                metrics.gpu_load_percent = nvidia_metrics.gpu_load;
-                metrics.vram_used_mb = nvidia_metrics.vram_used;
-                metrics.vram_total_mb = nvidia_metrics.vram_total;
-                metrics.gpu_temp_celsius = nvidia_metrics.gpu_temp;
-            }
-
+            // Linux: Query CPU metrics from /proc
             if let Some(cpu_load) = query_cpu_load() {
                 metrics.cpu_load_percent = cpu_load;
             }
+        }
+
+        #[cfg(windows)]
+        {
+            // Windows: TODO - implement CPU metrics via WMI or Performance Counters
+            // For now, estimate from system info
+            metrics.cpu_load_percent = 0.0;
         }
 
         metrics
     }
 }
 
-#[cfg(target_os = "linux")]
 struct NvidiaMetrics {
     gpu_load: f32,
     vram_used: u64,
@@ -72,7 +69,6 @@ struct NvidiaMetrics {
     gpu_temp: f32,
 }
 
-#[cfg(target_os = "linux")]
 fn query_nvidia_smi() -> Option<NvidiaMetrics> {
     use std::process::Command;
 

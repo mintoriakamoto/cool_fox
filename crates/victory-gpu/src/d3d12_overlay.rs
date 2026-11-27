@@ -11,6 +11,9 @@ pub mod d3d12_overlay {
     use windows_sys::Win32::Graphics::Dxgi::IDXGISwapChain;
     use windows_sys::Win32::Graphics::Direct3D12::ID3D12Device;
     use windows_sys::Win32::Foundation::HRESULT;
+    use windows_sys::Win32::Storage::FileSystem::*;
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
 
     /// Hook state for IDXGISwapChain::Present interception
     pub struct PresentHook {

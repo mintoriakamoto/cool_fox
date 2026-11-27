@@ -118,6 +118,8 @@ pub mod overlay;
 #[cfg(windows)]
 pub mod overlay_debug;
 #[cfg(windows)]
+pub mod d3d12_overlay;
+#[cfg(windows)]
 mod metrics_windows_test;
 #[cfg(windows)]
 pub mod windows_validation;

@@ -119,6 +119,8 @@ pub mod overlay;
 pub mod overlay_debug;
 #[cfg(windows)]
 mod metrics_windows_test;
+#[cfg(windows)]
+pub mod windows_validation;
 
 #[cfg(windows)]
 pub use host::on_failure;

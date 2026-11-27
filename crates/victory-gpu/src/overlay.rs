@@ -1,6 +1,10 @@
 //! Real-time overlay: renders FPS, GPU load, temps, bottleneck on-screen
 
 use crate::profiler::ProfileFrame;
+use std::sync::Mutex;
+
+/// Global overlay buffer for current frame metrics
+static OVERLAY_TEXT: Mutex<Option<String>> = Mutex::new(None);
 
 /// Simple text-based overlay metrics
 pub struct Overlay {
@@ -16,6 +20,19 @@ impl Overlay {
             frame_history: Vec::new(),
             max_history: 60,  // Keep 60 frames for average calc
         }
+    }
+
+    /// Update global overlay buffer with metrics text
+    pub fn update_metrics(frame: &ProfileFrame) {
+        let text = Self::format_metrics(frame);
+        if let Ok(mut buffer) = OVERLAY_TEXT.lock() {
+            *buffer = Some(text);
+        }
+    }
+
+    /// Get current overlay text for rendering
+    pub fn get_metrics() -> Option<String> {
+        OVERLAY_TEXT.lock().ok().and_then(|b| b.clone())
     }
 
     /// Format a ProfileFrame as overlay text
@@ -149,5 +166,33 @@ mod tests {
         let avg = overlay.avg_frame_time();
         assert!(avg.is_some());
         assert!(avg.unwrap() > 15.0);
+    }
+
+    #[test]
+    fn test_overlay_metrics_buffer() {
+        let frame = ProfileFrame {
+            timestamp_ms: 1000,
+            fps: 120.0,
+            gpu_load_percent: 85.0,
+            vram_used_mb: 30000,
+            vram_total_mb: 40960,
+            cpu_load_percent: 45.0,
+            gpu_temp_celsius: 70.0,
+            frame_time_ms: 8.333,
+            alerts: vec![],
+        };
+
+        // Update overlay buffer
+        Overlay::update_metrics(&frame);
+
+        // Verify text is captured
+        let text = Overlay::get_metrics();
+        assert!(text.is_some());
+
+        let metrics_str = text.unwrap();
+        assert!(metrics_str.contains("FPS: 120.0"));
+        assert!(metrics_str.contains("GPU: 85%"));
+        assert!(metrics_str.contains("70°C"));
+        assert!(metrics_str.contains("Balanced"));  // Not GPU-bound at 85% + 45% CPU
     }
 }

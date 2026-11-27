@@ -9968,15 +9968,9 @@ impl Host {
                     // Record the frame
                     crate::profiler::record_frame(prof_frame.clone());
 
-                    // Update overlay with metrics text
-                    static OVERLAY: std::sync::OnceLock<std::sync::Mutex<crate::overlay::Overlay>> =
-                        std::sync::OnceLock::new();
-                    if let Some(overlay) = OVERLAY.get_or_init(|| std::sync::Mutex::new(crate::overlay::Overlay::new())).lock() {
-                        if overlay.is_enabled() {
-                            let _metrics_text = crate::overlay::Overlay::format_metrics(&prof_frame);
-                            // metrics_text would be rendered to screen here via D3D12 text rendering
-                        }
-                    }
+                    // Update overlay buffer with current metrics
+                    crate::overlay::Overlay::update_metrics(&prof_frame);
+                    // Overlay text is now available via Overlay::get_metrics() for rendering
                 }
             }
 

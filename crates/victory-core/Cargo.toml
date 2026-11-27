@@ -18,6 +18,13 @@ tracing-subscriber.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Pipes",
+] }
+
 [features]
 # Lets `VICTORY_LOG` enable debug and trace output.
 diagnostics = []

@@ -99,21 +99,59 @@ impl ProfilerClient {
         let pid = self.game_pid;
 
         std::thread::spawn(move || {
-            let pipe_name = format!("\\\\.\\pipe\\victory-game-{}", pid);
-
             #[cfg(windows)]
-            {
-                // Windows implementation: connect to named pipe
-                use std::os::windows::io::AsRawHandle;
-                use std::ffi::CString;
+            Self::read_windows_pipe(&frames, &latest, &stats, &running, pid);
 
-                loop {
-                    if !running.lock().unwrap_or_else(|e| e.into_inner()).clone() {
-                        break;
-                    }
+            #[cfg(target_os = "linux")]
+            Self::read_unix_socket(&frames, &latest, &stats, &running, pid);
+        });
+    }
 
-                    // Try to open named pipe
-                    if let Ok(pipe) = std::fs::OpenOptions::new().read(true).open(&pipe_name) {
+    #[cfg(windows)]
+    fn read_windows_pipe(
+        frames: &Arc<Mutex<Vec<ProfileFrame>>>,
+        latest: &Arc<Mutex<Option<ProfileFrame>>>,
+        stats: &Arc<Mutex<SessionStats>>,
+        running: &Arc<Mutex<bool>>,
+        pid: u32,
+    ) {
+        use windows::Win32::Storage::FileSystem::{
+            CreateFileA, OPEN_EXISTING, FILE_GENERIC_READ, FILE_SHARE_READ, FILE_ATTRIBUTE_NORMAL,
+        };
+        use windows::Win32::Foundation::INVALID_HANDLE_VALUE;
+        use windows::Win32::System::Pipes::WaitNamedPipeA;
+        use std::ffi::CString;
+        use std::os::windows::io::FromRawHandle;
+
+        loop {
+            if !running.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+                break;
+            }
+
+            let pipe_name = format!("\\\\.\\pipe\\victory-game-{}\0", pid);
+
+            // Wait for pipe to be available (up to 1 second)
+            if let Ok(pipe_name_cstr) = CString::new(pipe_name.clone()) {
+                unsafe {
+                    let _ = WaitNamedPipeA(pipe_name_cstr.as_ptr(), 1000);
+                }
+            }
+
+            // Try to open named pipe
+            if let Ok(cstr) = CString::new(pipe_name.trim_end_matches('\0')) {
+                unsafe {
+                    let handle = CreateFileA(
+                        cstr.as_ptr(),
+                        FILE_GENERIC_READ,
+                        FILE_SHARE_READ,
+                        None,
+                        OPEN_EXISTING,
+                        FILE_ATTRIBUTE_NORMAL,
+                        None,
+                    );
+
+                    if handle != INVALID_HANDLE_VALUE {
+                        let pipe = std::fs::File::from_raw_handle(handle.0 as *mut _);
                         let reader = BufReader::new(pipe);
 
                         for line in reader.lines() {
@@ -123,17 +161,12 @@ impl ProfilerClient {
 
                             if let Ok(line_str) = line {
                                 if let Ok(frame) = serde_json::from_str::<ProfileFrame>(&line_str) {
-                                    // Store frame
                                     if let Ok(mut f) = frames.lock() {
                                         f.push(frame.clone());
                                     }
-
-                                    // Update latest
                                     if let Ok(mut l) = latest.lock() {
                                         *l = Some(frame.clone());
                                     }
-
-                                    // Update stats
                                     if let Ok(mut s) = stats.lock() {
                                         Self::update_stats(&mut s, &frame);
                                     }
@@ -141,58 +174,56 @@ impl ProfilerClient {
                             }
                         }
                     }
-
-                    // Backoff if pipe not available
-                    std::thread::sleep(Duration::from_millis(100));
                 }
             }
 
-            #[cfg(target_os = "linux")]
-            {
-                // Linux implementation: connect to Unix socket
-                use std::os::unix::net::UnixStream;
+            std::thread::sleep(Duration::from_millis(100));
+        }
+    }
 
-                loop {
+    #[cfg(target_os = "linux")]
+    fn read_unix_socket(
+        frames: &Arc<Mutex<Vec<ProfileFrame>>>,
+        latest: &Arc<Mutex<Option<ProfileFrame>>>,
+        stats: &Arc<Mutex<SessionStats>>,
+        running: &Arc<Mutex<bool>>,
+        pid: u32,
+    ) {
+        use std::os::unix::net::UnixStream;
+
+        loop {
+            if !running.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+                break;
+            }
+
+            let socket_path = format!("/tmp/victory-game-{}.sock", pid);
+
+            if let Ok(stream) = UnixStream::connect(&socket_path) {
+                let reader = BufReader::new(stream);
+
+                for line in reader.lines() {
                     if !running.lock().unwrap_or_else(|e| e.into_inner()).clone() {
                         break;
                     }
 
-                    let socket_path = format!("/tmp/victory-game-{}.sock", pid);
-
-                    if let Ok(stream) = UnixStream::connect(&socket_path) {
-                        let reader = BufReader::new(stream);
-
-                        for line in reader.lines() {
-                            if !running.lock().unwrap_or_else(|e| e.into_inner()).clone() {
-                                break;
+                    if let Ok(line_str) = line {
+                        if let Ok(frame) = serde_json::from_str::<ProfileFrame>(&line_str) {
+                            if let Ok(mut f) = frames.lock() {
+                                f.push(frame.clone());
                             }
-
-                            if let Ok(line_str) = line {
-                                if let Ok(frame) = serde_json::from_str::<ProfileFrame>(&line_str) {
-                                    // Store frame
-                                    if let Ok(mut f) = frames.lock() {
-                                        f.push(frame.clone());
-                                    }
-
-                                    // Update latest
-                                    if let Ok(mut l) = latest.lock() {
-                                        *l = Some(frame.clone());
-                                    }
-
-                                    // Update stats
-                                    if let Ok(mut s) = stats.lock() {
-                                        Self::update_stats(&mut s, &frame);
-                                    }
-                                }
+                            if let Ok(mut l) = latest.lock() {
+                                *l = Some(frame.clone());
+                            }
+                            if let Ok(mut s) = stats.lock() {
+                                Self::update_stats(&mut s, &frame);
                             }
                         }
                     }
-
-                    // Backoff if socket not available
-                    std::thread::sleep(Duration::from_millis(100));
                 }
             }
-        });
+
+            std::thread::sleep(Duration::from_millis(100));
+        }
     }
 
     fn update_stats(stats: &mut SessionStats, frame: &ProfileFrame) {

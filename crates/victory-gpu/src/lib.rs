@@ -113,6 +113,8 @@ mod texback;
 pub mod profiler;
 #[cfg(windows)]
 pub mod metrics;
+#[cfg(windows)]
+pub mod overlay;
 
 #[cfg(windows)]
 pub use host::on_failure;

@@ -11,6 +11,7 @@ pub mod logging;
 pub mod policy;
 pub mod profiler_client;
 pub mod game_process;
+pub mod session_persistence;
 
 #[cfg(test)]
 mod integration_test;

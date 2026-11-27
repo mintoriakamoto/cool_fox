@@ -2,7 +2,7 @@
 //! Simulates a game session with synthetic frame data and generates analysis
 
 use victory_core::ProfileFrame;
-use victory_core::session_analysis;
+use victory_core::{session_analysis, session_persistence};
 use anyhow::Result;
 
 fn main() -> Result<()> {
@@ -61,6 +61,11 @@ fn main() -> Result<()> {
 
     println!("📊 Simulated Session: 600 frames over 10 seconds");
     println!("🎮 Game: Stress Test\n");
+
+    // Save the session to disk
+    if let Ok(path) = session_persistence::save_session("StressTest", &frames) {
+        println!("💾 Saved to: {:?}\n", path);
+    }
 
     // Analyze the session
     let report = session_analysis::analyze_session("StressTest", &frames);

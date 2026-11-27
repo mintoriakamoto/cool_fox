@@ -375,6 +375,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "launcher-ui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "serde_json",
+ "victory-core",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

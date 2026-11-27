@@ -1,0 +1,16 @@
+[package]
+name = "profile-demo"
+description = "Demo application showcasing game profiling system"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+victory-core.workspace = true
+anyhow.workspace = true
+
+[[bin]]
+name = "profile-demo"
+path = "src/main.rs"

@@ -332,4 +332,61 @@ mod tests {
         assert_eq!(stats.gpu_load_peak, 90.0);
         assert_eq!(stats.alerts_total, 1);
     }
+
+    #[test]
+    fn test_bottleneck_detection_gpu_bound() {
+        let mut stats = SessionStats::default();
+        let frame = ProfileFrame {
+            timestamp_ms: 0,
+            fps: 30.0,
+            gpu_load_percent: 99.0,  // GPU maxed
+            vram_used_mb: 20000,
+            vram_total_mb: 40960,
+            cpu_load_percent: 20.0,  // CPU idle
+            gpu_temp_celsius: 85.0,
+            frame_time_ms: 33.333,
+            alerts: vec!["fps_drop".to_string()],
+        };
+
+        ProfilerClient::update_stats(&mut stats, &frame);
+        assert_eq!(stats.bottleneck, "GPU-bound");
+    }
+
+    #[test]
+    fn test_bottleneck_detection_cpu_bound() {
+        let mut stats = SessionStats::default();
+        let frame = ProfileFrame {
+            timestamp_ms: 0,
+            fps: 40.0,
+            gpu_load_percent: 30.0,  // GPU idle
+            vram_used_mb: 15000,
+            vram_total_mb: 40960,
+            cpu_load_percent: 98.0,  // CPU maxed
+            gpu_temp_celsius: 60.0,
+            frame_time_ms: 25.0,
+            alerts: vec![],
+        };
+
+        ProfilerClient::update_stats(&mut stats, &frame);
+        assert_eq!(stats.bottleneck, "CPU-bound");
+    }
+
+    #[test]
+    fn test_bottleneck_detection_vram_critical() {
+        let mut stats = SessionStats::default();
+        let frame = ProfileFrame {
+            timestamp_ms: 0,
+            fps: 50.0,
+            gpu_load_percent: 70.0,
+            vram_used_mb: 39000,  // 95% of 40960
+            vram_total_mb: 40960,
+            cpu_load_percent: 50.0,
+            gpu_temp_celsius: 75.0,
+            frame_time_ms: 20.0,
+            alerts: vec!["vram_critical".to_string()],
+        };
+
+        ProfilerClient::update_stats(&mut stats, &frame);
+        assert_eq!(stats.bottleneck, "VRAM-bound (overflow to swap)");
+    }
 }

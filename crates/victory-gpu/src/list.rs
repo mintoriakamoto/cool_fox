@@ -149,7 +149,7 @@ const _: () = assert!(offset_of!(List, pipeline_shadow) + 32 == 0x560);
 /// Runs `f` with the host list and draw state of a title list, if there
 /// is a host GPU.
 #[cfg(windows)]
-fn with_state(this: This, f: impl FnOnce(&crate::host::HostList, &mut crate::draw::State)) {
+pub(crate) fn with_state(this: This, f: impl FnOnce(&crate::host::HostList, &mut crate::draw::State)) {
     let Some(list) = host_list(this) else { return };
     #[cfg(feature = "diagnostics")]
     let started = std::time::Instant::now();
@@ -811,7 +811,7 @@ extern "system" fn barrier(this: This, count: u32, barriers: *const Barrier) -> 
                 )
             };
             // SAFETY: an open list and live resources.
-            unsafe { list.list.ResourceBarrier(host) };
+            unsafe { list.list.barriers(host) };
         }
     }
     0
@@ -824,8 +824,9 @@ pub(crate) fn ensure_state(list: &crate::host::HostList, resource: This, state: 
     if let Some((texture, before)) = list.transition(resource, state) {
         let state = crate::host::legal_state(texture, state);
         let barrier = crate::host::transition(texture, State(before as i32), State(state as i32));
-        // SAFETY: an open list and a live texture.
-        unsafe { list.list.ResourceBarrier(&[barrier]) };
+        // SAFETY: an open list and a live texture (the list's states hold
+        // it).
+        unsafe { list.list.barriers(&[barrier]) };
     }
 }
 
@@ -1583,7 +1584,7 @@ extern "system" fn sync(this: This, flags: u32, control: u32, address: u64, size
             // SAFETY: the same layout; no resource named.
             let barrier = unsafe { std::mem::transmute::<Barrier, D3D12_RESOURCE_BARRIER>(UAV_BARRIER) };
             // SAFETY: an open list.
-            unsafe { list.list.ResourceBarrier(&[barrier]) };
+            unsafe { list.list.barriers(&[barrier]) };
         }
     }
     let _ = (this, flags, control, address, size);
@@ -1998,23 +1999,29 @@ impl ValueWait {
         met
     }
 
+    #[cfg(windows)]
     fn holds(&self) -> bool {
         let bytes = if self.wide { 8 } else { 4 };
         if self.address == 0 {
             return true;
         }
         static ASK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *ASK.get_or_init(|| std::env::var_os("VICTORY_WAIT_ASK").is_some_and(|v| v == "1"))
-            && !crate::texture::committed(self.address as *const u8, bytes)
-        {
+        if *ASK.get_or_init(|| std::env::var_os("VICTORY_WAIT_ASK").is_some_and(|v| v == "1")) {
             return true;
         }
         // The low `bytes` bytes; the rest stays zero.
         let mut raw = [0u8; 8];
-        if !crate::host::read_into(self.address as *const u8, &mut raw[..bytes]) {
-            return true;
+        unsafe {
+            if std::ptr::read_bytes(self.address as *const u8, &mut raw[..bytes]) {
+                return true;
+            }
         }
         self.holds_for(u64::from_le_bytes(raw))
+    }
+
+    #[cfg(not(windows))]
+    fn holds(&self) -> bool {
+        true
     }
 
     /// Where the value waited for is: address and bytes.
@@ -2156,7 +2163,7 @@ extern "system" fn barrier_groups(this: This, count: u32, _groups: *const u8) {
         // SAFETY: the same layout; no resource named.
         let barrier = unsafe { std::mem::transmute::<Barrier, D3D12_RESOURCE_BARRIER>(UAV_BARRIER) };
         // SAFETY: an open list.
-        unsafe { list.list.ResourceBarrier(&[barrier]) };
+        unsafe { list.list.barriers(&[barrier]) };
     }
     #[cfg(not(windows))]
     let _ = (this, count);

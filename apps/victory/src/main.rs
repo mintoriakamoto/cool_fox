@@ -9,9 +9,11 @@ mod inspect;
 mod replay;
 mod run;
 mod shader;
+#[cfg(windows)]
 mod translate;
 #[cfg(windows)]
 mod warm;
+mod profile;
 
 use std::path::PathBuf;
 
@@ -30,6 +32,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum Command {
     /// Summarise one PE image: headers, sections, imports, TLS, build id.
     Inspect {
@@ -64,8 +67,8 @@ enum Command {
     /// archives, if uncompressed) and report their layout.
     ShaderInfo {
         paths: Vec<PathBuf>,
-        /// Print one line per container found.
-        #[arg(long)]
+        /// Print one line per container found and show why paths were skipped.
+        #[arg(short, long)]
         verbose: bool,
         /// Also list the decoded native instructions (implies --verbose).
         #[arg(long)]
@@ -73,6 +76,11 @@ enum Command {
     },
     /// Run every shader found (containers, SGD5 files) through the
     /// translator and report what it cannot handle yet.
+    ///
+    /// VICTORY_HOST_WAVE overrides the host wave width, including with --warm.
+    /// VICTORY_HOST_MAX_WAVE is a compatibility alias. When both values are
+    /// valid, VICTORY_HOST_WAVE takes precedence. Zero means unknown width.
+    /// For ordinary translation, VICTORY_HOST_RDNA=1 selects RDNA float settings.
     Translate {
         paths: Vec<PathBuf>,
         /// Check emitted DXIL with dxil.dll's validator (`VICTORY_DXIL`,
@@ -97,13 +105,19 @@ enum Command {
         warm: Option<PathBuf>,
     },
     /// Translate every shader found (as `translate` finds them) into the
-    /// shader cache, so that no run has to: a few minutes, once per change
-    /// of the translator.
+    /// shader cache, so that no run has to: a few minutes, once per version
+    /// of the translator. Translations an earlier build of the same version
+    /// cached are made again, and those that came out different counted.
+    /// In diagnostics builds, VICTORY_LOG=debug shows skipped paths.
     Shaders {
         paths: Vec<PathBuf>,
         /// Worker threads (default: every logical core).
         #[arg(long)]
         jobs: Option<usize>,
+        /// Also write every shader that does not translate to this file,
+        /// one line each: hash, where it was found, why.
+        #[arg(long)]
+        list: Option<PathBuf>,
     },
     /// Make the host pipelines of every pipeline the title ever created
     /// (runs with `VICTORY_PIPELINE_BOOK=1` write them down), so that the
@@ -151,8 +165,28 @@ enum Command {
     /// docs/replay.md).
     #[cfg(all(windows, feature = "diagnostics"))]
     Replay(replay::Replay),
+    /// Analyze game profiling sessions
+    #[command(subcommand)]
+    Profile(ProfileCommand),
     /// Show the resolved configuration and check it.
     Config,
+}
+
+#[derive(Subcommand)]
+enum ProfileCommand {
+    /// List all saved profiling sessions
+    List,
+    /// Analyze a specific profiling session and show performance report
+    Analyze {
+        path: PathBuf,
+    },
+    /// Analyze the most recent profiling session
+    Recent,
+    /// Export profiling session as CSV for external analysis
+    Export {
+        session_path: PathBuf,
+        output_path: PathBuf,
+    },
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -200,20 +234,31 @@ fn main() -> Result<()> {
             jobs,
             warm,
         } => {
-            // `VICTORY_VIEW_LIMIT=<null slot>`: translate as on a host whose view heap is capped
-            if let Some(n) = std::env::var("VICTORY_VIEW_LIMIT").ok().and_then(|v| v.parse().ok()) {
-                victory_shader::emit::set_view_heap_limit(n);
+            #[cfg(windows)]
+            {
+                // `VICTORY_VIEW_LIMIT=<null slot>`: translate as on a host whose view heap is capped
+                if let Some(n) = std::env::var("VICTORY_VIEW_LIMIT").ok().and_then(|v| v.parse().ok()) {
+                    victory_shader::emit::set_view_heap_limit(n);
+                }
+                let wave = translate::host_wave::select(
+                    std::env::var("VICTORY_HOST_WAVE").ok().as_deref(),
+                    std::env::var("VICTORY_HOST_MAX_WAVE").ok().as_deref(),
+                    |message| eprintln!("{message}"),
+                );
+                if let Some(file) = warm {
+                    return translate::warm(paths, &file, jobs, wave);
+                }
+                translate::run(paths, validate, pipelines, list, jobs, wave)
             }
-            // `VICTORY_HOST_WAVE=32`: translate as for a GPU whose waves are at most 32 lanes
-            if let Some(n) = std::env::var("VICTORY_HOST_WAVE").ok().and_then(|v| v.parse().ok()) {
-                victory_shader::emit::set_host_max_wave(n);
+            #[cfg(not(windows))]
+            {
+                return anyhow::bail!("Shader translation is only supported on Windows");
             }
-            if let Some(file) = warm {
-                return translate::warm(paths, &file, jobs);
-            }
-            translate::run(paths, validate, pipelines, list, jobs)
         }
-        Command::Shaders { paths, jobs } => translate::precompile(paths, jobs),
+        #[cfg(windows)]
+        Command::Shaders { paths, jobs, list } => translate::precompile(paths, jobs, list),
+        #[cfg(not(windows))]
+        Command::Shaders { .. } => anyhow::bail!("Shader precompilation is only supported on Windows"),
         #[cfg(windows)]
         Command::Warm { jobs, limit, again, used, these } => warm::run(jobs, limit, again, used, these),
         Command::Run {
@@ -229,6 +274,14 @@ fn main() -> Result<()> {
         }
         #[cfg(all(windows, feature = "diagnostics"))]
         Command::Replay(options) => replay::run(options),
+        Command::Profile(profile_cmd) => match profile_cmd {
+            ProfileCommand::List => profile::list_sessions(),
+            ProfileCommand::Analyze { path } => profile::analyze_session(&path),
+            ProfileCommand::Recent => profile::analyze_latest(),
+            ProfileCommand::Export { session_path, output_path } => {
+                profile::export_csv(&session_path, &output_path)
+            }
+        },
         Command::Config => show_config(),
     }
 }

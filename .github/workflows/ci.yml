@@ -16,7 +16,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
+  clippy:
+    name: Clippy
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -28,6 +29,80 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Clippy, diagnostics build
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+  test-default:
+    name: Default tests
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
       # Includes xtask's repository_passes_policy, the asset-policy check.
-      - name: Tests
-        run: cargo test --workspace --locked
+      - run: cargo test --workspace --locked
+
+  test-diagnostics:
+    name: Diagnostics tests
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --all-features --locked -- --test-threads=1
+
+  check:
+    needs: [clippy, test-default, test-diagnostics]
+    if: always()
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Require all three jobs to pass
+        run: |
+          if ('${{ needs.clippy.result }}' -ne 'success' -or
+              '${{ needs.test-default.result }}' -ne 'success' -or
+              '${{ needs.test-diagnostics.result }}' -ne 'success') {
+            exit 1
+          }
+
+  # Every push: the whole workspace type-checked for Windows from Linux
+  # (blake3's pure code in this job only; its MSVC build needs ml64.exe).
+  cross-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Check for x86_64-pc-windows-msvc
+        run: |
+          sed -i 's|^blake3 = "\([0-9.]*\)"|blake3 = { version = "\1", features = ["pure"] }|' Cargo.toml
+          cargo check --workspace --all-targets --target x86_64-pc-windows-msvc --locked
+
+  # The Windows release build, then the Linux package that wraps it.
+  build-exe:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked -p victory
+      - uses: actions/upload-artifact@v4
+        with:
+          name: victory-exe
+          path: target/release/victory.exe
+
+  deb:
+    needs: build-exe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: victory-exe
+      - run: packaging/deb/build-deb.sh victory.exe 0.1.0+${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: victory-wine-deb
+          path: victory-wine_*.deb

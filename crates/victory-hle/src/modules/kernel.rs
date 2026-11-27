@@ -426,6 +426,7 @@ fn title_priority(asked: i32) -> i32 {
 }
 
 /// [`title_priority`].
+#[cfg(windows)]
 pub extern "system" fn SetThreadPriority(thread: *mut c_void, priority: i32) -> i32 {
     static AS_SET: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     let as_set = *AS_SET.get_or_init(|| std::env::var_os("VICTORY_TITLE_PRIORITIES").is_some_and(|v| v == "0"));
@@ -468,6 +469,7 @@ pub(crate) fn module() -> HleModule {
             hle_export!(_invalid_parameter_noinfo_noreturn),
             hle_export!(TerminateProcess),
             hle_export!(SetUnhandledExceptionFilter),
+            #[cfg(windows)]
             hle_export!(SetThreadPriority),
         ],
     }
@@ -686,6 +688,7 @@ mod tests {
     /// The title's idle and lowest threads run below normal; the others as
     /// it sets them.
     #[test]
+    #[cfg(windows)]
     fn no_title_thread_waits_for_idle_processors() {
         let given: Vec<i32> = [-15, -2, -1, 0, 1, 2, 15].into_iter().map(title_priority).collect();
         assert_eq!(given, [-1, -1, -1, 0, 1, 2, 15]);
@@ -702,6 +705,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn title_images_report_their_original_path() {
         let base = 0x7000_0000_0000;
         runtime::set_image_path(base, std::path::Path::new(r"C:\title\game.exe"));
@@ -783,6 +787,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn title_dlls_and_pseudo_modules_are_found_by_name() {
         let base = 0x7100_0000_0000usize;
         runtime::set_image_path(base, std::path::Path::new(r"C:\title\Mapped.dll"));

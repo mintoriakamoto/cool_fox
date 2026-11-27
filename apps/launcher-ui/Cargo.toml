@@ -1,0 +1,19 @@
+[package]
+name = "launcher-ui"
+description = "Game launcher with profiling analysis UI"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+victory-core = { path = "../../crates/victory-core" }
+anyhow = "1.0"
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[lib]
+name = "launcher_ui"
+path = "src/lib.rs"
+
+[[bin]]
+name = "launcher-ui"
+path = "src/cli.rs"

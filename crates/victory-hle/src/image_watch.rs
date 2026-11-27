@@ -5,6 +5,10 @@
 //!
 //! `VICTORY_IMAGE_WATCH=used=98d26d8:8,failed=98d26d0:1`: a name, the offset
 //! in the image (hexadecimal) and the bytes (1, 2, 4 or 8).
+//!
+//! Windows-only diagnostics module.
+
+#![cfg(windows)]
 
 use std::time::Duration;
 

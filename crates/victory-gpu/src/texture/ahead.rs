@@ -104,6 +104,8 @@ fn claim(resource: This, first: u32, there: u64) -> Option<Taken> {
         let way = ON_THEIR_WAY.lock().unwrap_or_else(|e| e.into_inner());
         return way.iter().find(|(serial, _)| *serial == copy.serial).map(|(_, job)| Taken::Known(job.clone()));
     }
+    // (`VICTORY_RESIDENCY=1`: less on its way with 32 GiB of RAM or less,
+    // none while commit is short.)
     let most = if crate::residency::limited_host_ram() { 32 << 20 } else { MOST };
     if !crate::residency::allow_staging_growth(false)
         || BYTES.load(Relaxed) >= most
@@ -147,25 +149,6 @@ fn claim(resource: This, first: u32, there: u64) -> Option<Taken> {
 pub(crate) fn send(job: &Arc<Job>) {
     QUEUE.0.lock().unwrap_or_else(|e| e.into_inner()).push_back(job.clone());
     QUEUE.1.notify_one();
-}
-
-/// Waits until every upload currently on its way here has finished copying
-/// and run its completion callbacks (queuing slot flips into `FLIPS`).
-/// Returns how many jobs were waited for.
-pub(crate) fn drain() -> usize {
-    if IN_FLIGHT.load(std::sync::atomic::Ordering::Acquire) == 0 {
-        return 0;
-    }
-    let mut way = ON_THEIR_WAY.lock().unwrap_or_else(|e| e.into_inner());
-    let waiting = way.len();
-    let started = std::time::Instant::now();
-    while !way.is_empty() && started.elapsed().as_millis() < 2000 {
-        way = LANDED
-            .wait_timeout(way, std::time::Duration::from_millis(50))
-            .unwrap_or_else(|e| e.into_inner())
-            .0;
-    }
-    waiting
 }
 
 /// A list is about to record an upload into `copy`: one on its way here runs
@@ -444,30 +427,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn drain_waits_until_then_callbacks_have_run() {
-        use std::sync::atomic::AtomicBool;
-        use windows_sys::Win32::System::Memory::{MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE, VirtualAlloc};
-        let Some(_host) = crate::host::host() else { return };
-        let desc = [3u32, 0, 0, 0, 128, 0, 128, 0x8_0001, 98, 1, 0, 0x105, 0, 0];
-        let whole = crate::resource::placed_bytes(&desc).unwrap() as usize;
-        // SAFETY: memory of our own that stays for the test.
-        let at = unsafe { VirtualAlloc(std::ptr::null(), whole, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE) }.cast::<u8>();
-        // SAFETY: as above.
-        unsafe { std::ptr::write_bytes(at, 0x5a, whole) };
-        let texture = crate::resource::texture_at(at as u64, &desc).unwrap();
-        crate::resource::want_level(texture, 0);
-        let copy = crate::resource::host_copy(texture).unwrap();
-        if !crate::pool::fresh(&copy.texture) {
-            return;
-        }
-        let Some(Taken::New(job)) = claim(texture, 0, u64::MAX) else { panic!("not taken") };
-        let ran = Arc::new(AtomicBool::new(false));
-        let flag = ran.clone();
-        job.then(move || flag.store(true, std::sync::atomic::Ordering::Release));
-        send(&job);
-        assert!(drain() >= 1);
-        assert!(ran.load(std::sync::atomic::Ordering::Acquire), "job.then callback must run before drain() returns");
-        assert_eq!(drain(), 0);
-    }
 }

@@ -178,6 +178,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(windows)]
     fn patches_own_test_binary() {
         let original = std::fs::read(std::env::current_exe().unwrap()).unwrap();
         let prepared = prepare(&original).unwrap();
@@ -205,6 +206,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn keeps_iat_slots_when_import_size_excludes_the_terminator() {
         let mut original = std::fs::read(std::env::current_exe().unwrap()).unwrap();
         let info = ImageInfo::parse(&original).unwrap();
@@ -274,6 +276,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn file_name_is_stable_per_build() {
         let original = std::fs::read(std::env::current_exe().unwrap()).unwrap();
         let a = prepare(&original).unwrap();

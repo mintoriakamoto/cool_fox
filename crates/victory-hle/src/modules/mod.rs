@@ -11,11 +11,14 @@
 #[cfg(windows)]
 pub mod apu;
 pub mod audio;
+#[cfg(windows)]
 pub mod d3d12x;
 pub mod display;
 pub mod dsp;
 #[cfg(windows)]
 pub mod dstorage;
+#[cfg(windows)]
+pub mod fidelityfx;
 #[cfg(windows)]
 pub mod files;
 pub mod gameinput;
@@ -50,11 +53,12 @@ pub(crate) fn all() -> Vec<HleModule> {
         kernel::module(),
         xgameruntime::module(),
         gameinput::module(),
-        d3d12x::module(),
         audio::module(),
         dsp::module(),
         xg::module(),
     ];
+    #[cfg(windows)]
+    all.push(d3d12x::module());
     #[cfg(windows)]
     all.push(apu::module());
     #[cfg(windows)]
@@ -72,5 +76,9 @@ pub(crate) fn all() -> Vec<HleModule> {
     all.push(xmem::module());
     #[cfg(windows)]
     all.push(xsystem::module());
+    #[cfg(windows)]
+    if fidelityfx::serving() {
+        all.push(fidelityfx::module());
+    }
     all
 }

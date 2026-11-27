@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::{Console, Unimplemented};
 
@@ -67,6 +67,7 @@ pub fn run(
     }
 
     let images = cfg.cache_subdir("images")?;
+    #[cfg(windows)]
     victory_hle::modules::d3d12x::use_shader_cache(cfg.cache_subdir("shaders")?);
     let image = if let Some(preset) = fsr {
         anyhow::ensure!(matches!(console, Console::SeriesX), "FSR 4K requires Series X mode");

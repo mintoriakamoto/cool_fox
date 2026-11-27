@@ -9,12 +9,17 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use anyhow::Result;
+#[cfg(windows)]
 use victory_shader::emit::host::{self, Host};
+#[cfg(windows)]
 use victory_shader::emit::{self, validator::Validator};
+#[cfg(windows)]
 use victory_shader::structure::{self, Atom, LaneExit};
+#[cfg(windows)]
 use victory_shader::{
     Container, FourCC, HwStage, NativeProgram, RootType, ShaderError, ir, native_programs,
 };
+#[cfg(windows)]
 use victory_shader::{io, resource};
 
 use crate::shader::{MAX_FILE, Source, scan::FileScan, sources};
@@ -176,8 +181,15 @@ pub fn warm(paths: Vec<PathBuf>, file: &Path, jobs: Option<usize>, wave: Option<
     // `VICTORY_WARM_SECONDS=<n>`: stop taking new shaders after n seconds
     // (what is done stays in the cache; the next warm-up goes on from there).
     let limit = std::env::var("VICTORY_WARM_SECONDS").ok().and_then(|v| v.trim().parse::<u64>().ok());
-    let cfg = victory_core::Config::load()?;
-    victory_hle::modules::d3d12x::use_shader_cache(cfg.cache_subdir("shaders")?);
+    #[cfg(windows)]
+    {
+        let cfg = victory_core::Config::load()?;
+        victory_hle::modules::d3d12x::use_shader_cache(cfg.cache_subdir("shaders")?);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = victory_core::Config::load()?;
+    }
     let paths = crate::default_paths(paths)?;
     let threads = jobs.unwrap_or(4).max(1);
     let began = std::time::Instant::now();
@@ -212,11 +224,14 @@ pub fn warm(paths: Vec<PathBuf>, file: &Path, jobs: Option<usize>, wave: Option<
                             if n.is_multiple_of(1000) {
                                 println!("warm-up      {n} shaders so far, {:.0} s", began.elapsed().as_secs_f64());
                             }
+                            #[cfg(windows)]
                             let which = match victory_hle::modules::d3d12x::warm_shader(&bytes) {
                                 Ok(true) => 0,
                                 Ok(false) => 1,
                                 Err(_) => 2,
                             };
+                            #[cfg(not(windows))]
+                            let which = 2; // Not supported on non-Windows
                             counts[which].fetch_add(1, Ordering::Relaxed);
                         }
                     });
@@ -410,6 +425,7 @@ pub fn run(
 /// Every shader found into the cache runs translate from.
 pub fn precompile(paths: Vec<PathBuf>, jobs: Option<usize>, list: Option<PathBuf>) -> Result<()> {
     let cfg = victory_core::Config::load()?;
+    #[cfg(windows)]
     victory_hle::modules::d3d12x::use_shader_cache(cfg.cache_subdir("shaders")?);
     let paths = crate::default_paths(paths)?;
     let threads =
@@ -433,6 +449,7 @@ pub fn precompile(paths: Vec<PathBuf>, jobs: Option<usize>, list: Option<PathBuf
                             if !lock(&seen).insert(hash) {
                                 continue;
                             }
+                            #[cfg(windows)]
                             match victory_hle::modules::d3d12x::precompile(&bytes) {
                                 Ok(_) => {
                                     let n = done.fetch_add(1, Ordering::Relaxed) + 1;
@@ -440,8 +457,9 @@ pub fn precompile(paths: Vec<PathBuf>, jobs: Option<usize>, list: Option<PathBuf
                                         println!("{n} shaders in the cache, {:.0} s", started.elapsed().as_secs_f64());
                                     }
                                 }
-                                Err(why) => {
+                                Err(e) => {
                                     let hex = hash.to_hex()[..16].to_owned();
+                                    let why = e.to_string();
                                     if list.is_some() {
                                         let line = format!("{hex}	{}{}	{why}", path.display(), job.label());
                                         lock(&lines).push(line);
@@ -449,6 +467,18 @@ pub fn precompile(paths: Vec<PathBuf>, jobs: Option<usize>, list: Option<PathBuf
                                     let mut failed = lock(&failed);
                                     failed.entry(why).or_insert((0, hex)).0 += 1;
                                 }
+                            }
+                            #[cfg(not(windows))]
+                            {
+                                // Not supported on non-Windows platforms - just count as error
+                                let hex = hash.to_hex()[..16].to_owned();
+                                let why = "shader compilation not available".to_string();
+                                if list.is_some() {
+                                    let line = format!("{hex}	{}{}	{why}", path.display(), job.label());
+                                    lock(&lines).push(line);
+                                }
+                                let mut failed = lock(&failed);
+                                failed.entry(why).or_insert((0, hex)).0 += 1;
                             }
                         }
                     });
@@ -470,7 +500,10 @@ pub fn precompile(paths: Vec<PathBuf>, jobs: Option<usize>, list: Option<PathBuf
         failed.values().map(|f| f.0).sum::<usize>(),
         started.elapsed().as_secs_f64()
     );
+    #[cfg(windows)]
     let (stale, refreshed, changed) = victory_hle::modules::d3d12x::stale_shaders();
+    #[cfg(not(windows))]
+    let (stale, refreshed, changed) = (0, 0, 0);
     if stale > 0 {
         println!(
             "{refreshed} of {stale} translations an earlier build of the translator had cached translated again, {changed} came out different{}",

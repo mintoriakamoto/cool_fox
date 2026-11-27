@@ -1,6 +1,6 @@
 //! Game profiling session analysis
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use anyhow::Result;
 use victory_core::session_persistence;
 use victory_core::session_analysis;

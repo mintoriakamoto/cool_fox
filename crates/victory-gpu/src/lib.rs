@@ -117,6 +117,8 @@ pub mod metrics;
 pub mod overlay;
 #[cfg(windows)]
 pub mod overlay_debug;
+#[cfg(windows)]
+mod metrics_windows_test;
 
 #[cfg(windows)]
 pub use host::on_failure;

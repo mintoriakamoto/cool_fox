@@ -989,6 +989,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "victory-profile"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "victory-core",
+]
+
+[[package]]
 name = "victory-shader"
 version = "0.1.0"
 dependencies = [

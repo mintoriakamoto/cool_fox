@@ -389,4 +389,39 @@ mod tests {
         ProfilerClient::update_stats(&mut stats, &frame);
         assert_eq!(stats.bottleneck, "VRAM-bound (overflow to swap)");
     }
+
+    #[test]
+    fn test_ipc_frame_serialization() {
+        // Verify frames can be serialized to JSON for IPC transport
+        let frame = ProfileFrame {
+            timestamp_ms: 1700000000123,
+            fps: 58.3,
+            gpu_load_percent: 87.5,
+            vram_used_mb: 32456,
+            vram_total_mb: 40960,
+            cpu_load_percent: 65.2,
+            gpu_temp_celsius: 72.0,
+            frame_time_ms: 17.1,
+            alerts: vec!["vram_at_80_percent".to_string()],
+        };
+
+        // Serialize to JSON (as would be sent over IPC)
+        let json = serde_json::to_string(&frame).expect("frame serialization failed");
+
+        // Add newline (as per protocol)
+        let mut line = json.clone();
+        line.push('\n');
+
+        // Verify it deserializes correctly (as launcher would read it)
+        let parsed = serde_json::from_str::<ProfileFrame>(&json)
+            .expect("frame deserialization failed");
+
+        assert_eq!(parsed.fps, frame.fps);
+        assert_eq!(parsed.gpu_load_percent, frame.gpu_load_percent);
+        assert_eq!(parsed.vram_used_mb, frame.vram_used_mb);
+        assert_eq!(parsed.alerts[0], frame.alerts[0]);
+
+        // Verify line format is correct for IPC
+        assert!(line.ends_with('\n'));
+    }
 }

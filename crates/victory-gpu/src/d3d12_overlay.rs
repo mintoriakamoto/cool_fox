@@ -251,6 +251,7 @@ pub mod d3d12_overlay {
             );
 
             if hr != 0 || d2d_device_context.is_null() {
+                (dxgi_device as *mut std::ffi::c_void as *mut IUnknown).Release();
                 (*text_layout).Release();
                 (*text_format).Release();
                 (*dw_factory).Release();
@@ -274,6 +275,7 @@ pub mod d3d12_overlay {
             );
 
             if hr != 0 || color_brush.is_null() {
+                (dxgi_device as *mut std::ffi::c_void as *mut IUnknown).Release();
                 (*d2d_device_context).Release();
                 (*text_layout).Release();
                 (*text_format).Release();
@@ -318,6 +320,9 @@ pub mod d3d12_overlay {
             }
             if !d2d_factory.is_null() {
                 (*d2d_factory).Release();
+            }
+            if !dxgi_device.is_null() {
+                (dxgi_device as *mut std::ffi::c_void as *mut IUnknown).Release();
             }
 
             if hr != 0 {

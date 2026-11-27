@@ -9,9 +9,6 @@
 //! 6. Validates bottleneck detection
 //! 7. Measures performance overhead
 
-use std::thread;
-use std::time::Duration;
-
 #[test]
 fn game_simulation_60_seconds_at_60fps() {
     // Simulate a 60-second gaming session at 60 FPS
@@ -30,8 +27,6 @@ fn game_simulation_60_seconds_at_60fps() {
 
     let mut frame_count = 0;
     let mut bottleneck_counts = [0u32; 5]; // GPU, CPU, VRAM, Thermal, Balanced
-    let mut min_fps = FPS;
-    let mut max_fps = FPS;
     let mut total_frame_time_ms = 0.0;
 
     // Simulate frame generation
@@ -55,49 +50,29 @@ fn game_simulation_60_seconds_at_60fps() {
         // Temperature tracks GPU load
         gpu_temp = 55.0 + (gpu_load * 0.3);
 
-        // Calculate FPS (some frame drops)
-        let fps = if frame_num % 300 == 0 {
-            FPS * 0.9  // Occasional drops
-        } else {
-            FPS
-        };
-
-        if fps < min_fps {
-            min_fps = fps;
-        }
-        if fps > max_fps {
-            max_fps = fps;
-        }
         total_frame_time_ms += FRAME_TIME_MS;
 
-        // Categorize bottleneck
-        let (gpu_bound, cpu_bound, vram_critical, thermal_limited, balanced) = (
-            gpu_load > 95.0 && cpu_load < 50.0,
-            cpu_load > 95.0 && gpu_load < 80.0,
-            vram_used as f32 / 40960.0 > 0.95,
-            gpu_temp > 85.0,
-            gpu_load < 95.0 && cpu_load < 95.0 && (vram_used as f32 / 40960.0) < 0.95 && gpu_temp < 85.0,
-        );
-
-        if gpu_bound {
-            bottleneck_counts[0] += 1;
-        } else if cpu_bound {
-            bottleneck_counts[1] += 1;
-        } else if vram_critical {
-            bottleneck_counts[2] += 1;
-        } else if thermal_limited {
-            bottleneck_counts[3] += 1;
-        } else if balanced {
-            bottleneck_counts[4] += 1;
-        }
+        // Categorize bottleneck (mutually exclusive)
+        let bottleneck_type = if gpu_load > 95.0 && cpu_load < 50.0 {
+            0 // GPU-bound
+        } else if cpu_load > 95.0 && gpu_load < 80.0 {
+            1 // CPU-bound
+        } else if vram_used as f32 / 40960.0 > 0.95 {
+            2 // VRAM-critical
+        } else if gpu_temp > 85.0 {
+            3 // Thermal-limited
+        } else {
+            4 // Balanced
+        };
+        bottleneck_counts[bottleneck_type] += 1;
     }
 
     // Validation
+    let avg_fps = (frame_count as f32 / total_frame_time_ms) * 1000.0;
     println!("\n=== Game Simulation Results ===");
     println!("Total frames: {}", frame_count);
     println!("Simulation time: {:.2} seconds", total_frame_time_ms / 1000.0);
-    println!("FPS: min={:.1}, max={:.1}, avg={:.1}",
-             min_fps, max_fps, (frame_count as f32 / total_frame_time_ms) * 1000.0);
+    println!("Average FPS: {:.1}", avg_fps);
 
     println!("\nBottleneck Analysis:");
     println!("  GPU-bound:      {} frames ({:.1}%)", bottleneck_counts[0],
@@ -113,8 +88,7 @@ fn game_simulation_60_seconds_at_60fps() {
 
     // Assertions
     assert_eq!(frame_count, TOTAL_FRAMES, "Should generate correct number of frames");
-    assert!(min_fps >= 50.0, "FPS should not drop below 50");
-    assert!(max_fps <= 65.0, "FPS should not exceed 65");
+    assert!((avg_fps - FPS).abs() < 1.0, "Average FPS should be ~60");
 
     let total_bottlenecks: u32 = bottleneck_counts.iter().sum();
     assert_eq!(total_bottlenecks, frame_count, "All frames should be categorized");

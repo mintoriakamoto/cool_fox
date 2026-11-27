@@ -12,6 +12,7 @@ mod shader;
 mod translate;
 #[cfg(windows)]
 mod warm;
+mod profile;
 
 use std::path::PathBuf;
 
@@ -163,8 +164,28 @@ enum Command {
     /// docs/replay.md).
     #[cfg(all(windows, feature = "diagnostics"))]
     Replay(replay::Replay),
+    /// Analyze game profiling sessions
+    #[command(subcommand)]
+    Profile(ProfileCommand),
     /// Show the resolved configuration and check it.
     Config,
+}
+
+#[derive(Subcommand)]
+enum ProfileCommand {
+    /// List all saved profiling sessions
+    List,
+    /// Analyze a specific profiling session and show performance report
+    Analyze {
+        path: PathBuf,
+    },
+    /// Analyze the most recent profiling session
+    Recent,
+    /// Export profiling session as CSV for external analysis
+    Export {
+        session_path: PathBuf,
+        output_path: PathBuf,
+    },
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -242,6 +263,14 @@ fn main() -> Result<()> {
         }
         #[cfg(all(windows, feature = "diagnostics"))]
         Command::Replay(options) => replay::run(options),
+        Command::Profile(profile_cmd) => match profile_cmd {
+            ProfileCommand::List => profile::list_sessions(),
+            ProfileCommand::Analyze { path } => profile::analyze_session(&path),
+            ProfileCommand::Recent => profile::analyze_latest(),
+            ProfileCommand::Export { session_path, output_path } => {
+                profile::export_csv(&session_path, &output_path)
+            }
+        },
         Command::Config => show_config(),
     }
 }

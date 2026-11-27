@@ -4,11 +4,21 @@
 use victory_core::ProfileFrame;
 use victory_core::{session_analysis, session_persistence};
 use anyhow::Result;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 fn main() -> Result<()> {
     println!("╔════════════════════════════════════════════════════════════╗");
     println!("║         Victory Game Launcher - Profiling Demo             ║");
     println!("╚════════════════════════════════════════════════════════════╝\n");
+
+    // Initialize overlay file for real-time metrics
+    let mut overlay_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open("/tmp/victory-overlay.txt")
+        .ok();
 
     // Simulate a 10-second game session (600 frames at 60 FPS)
     let mut frames = Vec::new();
@@ -55,6 +65,22 @@ fn main() -> Result<()> {
                 vec![]
             },
         };
+
+        // Write to overlay file (simulates real-time HUD output)
+        if let Some(ref mut file) = overlay_file {
+            let output = format!(
+                "{:>6.1} fps │ GPU {:>3.0}% {:>3.0}°C │ CPU {:>3.0}% │ VRAM {}/{}MB │ {}\n",
+                frame.fps,
+                frame.gpu_load_percent as u32,
+                frame.gpu_temp_celsius as u32,
+                frame.cpu_load_percent as u32,
+                frame.vram_used_mb / 1024,
+                frame.vram_total_mb / 1024,
+                if frame.alerts.is_empty() { "OK" } else { "⚠" }
+            );
+            let _ = file.write_all(output.as_bytes());
+            let _ = file.flush();
+        }
 
         frames.push(frame);
     }

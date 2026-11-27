@@ -380,6 +380,8 @@ pub fn init() {
     let mut profiler = PROFILER.lock().unwrap_or_else(|e| e.into_inner());
     if profiler.is_none() {
         *profiler = Some(Profiler::new());
+        // Initialize overlay file output
+        let _ = crate::overlay_debug::init_debug_overlay();
         tracing::info!("profiler initialized");
     }
 }
@@ -387,6 +389,8 @@ pub fn init() {
 /// Record a profiling frame
 pub fn record_frame(frame: ProfileFrame) {
     init();
+    // Write to overlay debug file
+    crate::overlay_debug::render_frame_metrics(&frame);
     if let Ok(profiler) = PROFILER.lock() {
         if let Some(p) = profiler.as_ref() {
             p.record_frame(frame);

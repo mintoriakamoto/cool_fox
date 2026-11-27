@@ -9,11 +9,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📊 Available at: http://localhost:8080");
     println!("📁 Sessions from: ~/.local/share/launcher/profiles/\n");
 
+    // Serve static files from static directory
+    let static_dir = std::path::PathBuf::from("apps/launcher-web/static");
+
     let app = axum::Router::new()
         .route("/api/sessions", axum::routing::get(list_sessions))
         .route("/api/sessions/:id/data", axum::routing::get(session_data))
         .route("/api/sessions/:id/metrics", axum::routing::get(session_metrics))
-        .route("/", axum::routing::get(root))
+        .route("/", axum::routing::get(serve_index))
+        .route("/dashboard.html", axum::routing::get(serve_dashboard))
+        .nest_service("/static", tower_http::services::ServeDir::new(&static_dir))
         .into_make_service();
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await?;
@@ -24,30 +29,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn root() -> &'static str {
-    r#"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Victory Launcher</title>
-        <style>
-            body { font-family: sans-serif; margin: 40px; }
-            h1 { color: #667eea; }
-            a { color: #667eea; text-decoration: none; margin-right: 20px; }
-            a:hover { text-decoration: underline; }
-        </style>
-    </head>
-    <body>
-        <h1>🎮 Victory Launcher</h1>
-        <p>Web API endpoints:</p>
-        <ul>
-            <li><a href="/api/sessions">/api/sessions</a> - List all sessions</li>
-            <li><a href="/dashboard.html">/dashboard.html</a> - Web dashboard</li>
-        </ul>
-        <p>Or use: <code>victory-profile list</code> for CLI</p>
-    </body>
-    </html>
-    "#
+async fn serve_index() -> (axum::http::StatusCode, String) {
+    match tokio::fs::read_to_string("apps/launcher-web/static/index.html").await {
+        Ok(content) => (axum::http::StatusCode::OK, content),
+        Err(_) => (axum::http::StatusCode::NOT_FOUND, "Index not found".to_string()),
+    }
+}
+
+async fn serve_dashboard() -> (axum::http::StatusCode, String) {
+    match tokio::fs::read_to_string("apps/launcher-web/static/dashboard.html").await {
+        Ok(content) => (axum::http::StatusCode::OK, content),
+        Err(_) => (axum::http::StatusCode::NOT_FOUND, "Dashboard not found".to_string()),
+    }
 }
 
 async fn list_sessions() -> axum::Json<Value> {

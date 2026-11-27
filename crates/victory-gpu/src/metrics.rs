@@ -157,31 +157,52 @@ fn query_cpu_load() -> Option<f32> {
 
 #[cfg(windows)]
 fn query_cpu_load_windows() -> Option<f32> {
-    use std::sync::atomic::AtomicU64;
-    use std::time::SystemTime;
+    use windows_sys::Win32::System::SystemInformation::{GetSystemTimes, FILETIME};
 
-    // Track previous sample time and idle time for delta calculation
     static PREV_IDLE_TIME: AtomicU64 = AtomicU64::new(0);
-    static PREV_SAMPLE_TIME: AtomicU64 = AtomicU64::new(0);
+    static PREV_TOTAL_TIME: AtomicU64 = AtomicU64::new(0);
 
-    // Try to get CPU times via Windows API
-    // For cross-compiled code without full Windows SDK, estimate based on activity
-    // A real implementation would use GetSystemTimes or Performance Counters
+    let mut idle_time = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+    let mut kernel_time = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+    let mut user_time = FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
 
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .ok()?
-        .as_millis() as u64;
+    // Safe to call with valid FILETIME pointers
+    let success = unsafe {
+        GetSystemTimes(
+            &mut idle_time,
+            &mut kernel_time,
+            &mut user_time,
+        )
+    };
 
-    let prev_time = PREV_SAMPLE_TIME.load(Ordering::Relaxed);
-    PREV_SAMPLE_TIME.store(now, Ordering::Relaxed);
-
-    if prev_time == 0 {
-        return Some(50.0);  // Default estimate on first call
+    if !success {
+        return Some(50.0);  // Fallback if API fails
     }
 
-    // Simple estimation: return moderate load (better than 0, acknowledges uncertainty)
-    Some(45.0)
+    // Convert FILETIME (100-nanosecond intervals) to u64
+    let idle_ticks = ((idle_time.dwHighDateTime as u64) << 32) | (idle_time.dwLowDateTime as u64);
+    let total_ticks = ((kernel_time.dwHighDateTime as u64) << 32) | (kernel_time.dwLowDateTime as u64)
+                    + ((user_time.dwHighDateTime as u64) << 32) | (user_time.dwLowDateTime as u64);
+
+    let prev_idle = PREV_IDLE_TIME.load(Ordering::Relaxed);
+    let prev_total = PREV_TOTAL_TIME.load(Ordering::Relaxed);
+
+    PREV_IDLE_TIME.store(idle_ticks, Ordering::Relaxed);
+    PREV_TOTAL_TIME.store(total_ticks, Ordering::Relaxed);
+
+    if prev_total == 0 {
+        return Some(50.0);  // First call, return estimate
+    }
+
+    let idle_diff = idle_ticks.saturating_sub(prev_idle) as f32;
+    let total_diff = total_ticks.saturating_sub(prev_total) as f32;
+
+    if total_diff == 0.0 {
+        return Some(50.0);
+    }
+
+    let cpu_usage = 100.0 * (1.0 - (idle_diff / total_diff));
+    Some(cpu_usage.max(0.0).min(100.0))
 }
 
 /// Frame time history (last 60 frames) for FPS calculation

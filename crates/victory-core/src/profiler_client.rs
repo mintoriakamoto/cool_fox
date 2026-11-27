@@ -424,4 +424,64 @@ mod tests {
         // Verify line format is correct for IPC
         assert!(line.ends_with('\n'));
     }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_unix_socket_pipeline() {
+        use std::io::Write;
+        use std::os::unix::net::UnixListener;
+        use std::thread;
+        use std::time::Duration;
+
+        // Create temporary socket for testing
+        let socket_path = format!("/tmp/test-victory-{}.sock", std::process::id());
+        let _ = std::fs::remove_file(&socket_path);
+
+        // Server: simulate game writing frames
+        let socket_path_clone = socket_path.clone();
+        let server = thread::spawn(move || {
+            if let Ok(listener) = UnixListener::bind(&socket_path_clone) {
+                if let Ok((mut stream, _)) = listener.accept() {
+                    // Write first frame
+                    let frame1 = ProfileFrame {
+                        timestamp_ms: 1,
+                        fps: 60.0,
+                        gpu_load_percent: 75.0,
+                        vram_used_mb: 30000,
+                        vram_total_mb: 40960,
+                        cpu_load_percent: 50.0,
+                        gpu_temp_celsius: 70.0,
+                        frame_time_ms: 16.667,
+                        alerts: vec![],
+                    };
+                    if let Ok(json) = serde_json::to_string(&frame1) {
+                        let _ = stream.write_all(format!("{}\n", json).as_bytes());
+                    }
+                }
+            }
+        });
+
+        thread::sleep(Duration::from_millis(100));
+
+        // Client: connect and read frame
+        if let Ok(stream) = std::os::unix::net::UnixStream::connect(&socket_path) {
+            let reader = BufReader::new(stream);
+            let mut received = false;
+
+            for line in reader.lines().take(1) {
+                if let Ok(line_str) = line {
+                    if let Ok(frame) = serde_json::from_str::<ProfileFrame>(&line_str) {
+                        assert_eq!(frame.fps, 60.0);
+                        assert_eq!(frame.gpu_load_percent, 75.0);
+                        received = true;
+                    }
+                }
+            }
+
+            assert!(received, "Failed to receive frame over Unix socket");
+        }
+
+        let _ = std::fs::remove_file(&socket_path);
+        let _ = server.join();
+    }
 }

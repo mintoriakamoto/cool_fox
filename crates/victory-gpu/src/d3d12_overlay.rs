@@ -148,6 +148,8 @@ pub mod d3d12_overlay {
         {
             use windows_sys::Win32::Graphics::Direct2D::*;
             use windows_sys::Win32::Graphics::DirectWrite::*;
+            use windows_sys::Win32::Graphics::Direct3D12::*;
+            use windows_sys::Win32::Graphics::Dxgi::*;
             use windows_sys::Win32::Foundation::*;
 
             if device.is_null() {
@@ -226,12 +228,85 @@ pub mod d3d12_overlay {
                 return Err(hr);
             }
 
-            // 5. Create render target
-            // In a full implementation, this would be backed by the swap chain's back buffer.
-            // For now, we've set up the factory and format chain.
-            // The actual rendering would composite text onto the game's backbuffer here.
+            // 5. Create DXGI device from D3D12
+            let mut dxgi_device: *mut std::ffi::c_void = std::ptr::null_mut();
+            let hr = (*device).QueryInterface(
+                &IID_IDXGIDevice,
+                &mut dxgi_device,
+            );
 
-            // Clean up resources
+            if hr != 0 || dxgi_device.is_null() {
+                (*text_layout).Release();
+                (*text_format).Release();
+                (*dw_factory).Release();
+                (*d2d_factory).Release();
+                return Err(hr);
+            }
+
+            // 6. Create D2D device context from DXGI device
+            let mut d2d_device_context: *mut ID2D1DeviceContext = std::ptr::null_mut();
+            let hr = (*d2d_factory).CreateDevice(
+                dxgi_device,
+                &mut d2d_device_context,
+            );
+
+            if hr != 0 || d2d_device_context.is_null() {
+                (*text_layout).Release();
+                (*text_format).Release();
+                (*dw_factory).Release();
+                (*d2d_factory).Release();
+                return Err(hr);
+            }
+
+            // 7. Create white solid color brush for text
+            let mut color_brush: *mut ID2D1SolidColorBrush = std::ptr::null_mut();
+            let white_color = D2D1_COLOR_F {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 0.9,
+            };
+
+            let hr = (*d2d_device_context).CreateSolidColorBrush(
+                &white_color,
+                std::ptr::null_mut(),
+                &mut color_brush,
+            );
+
+            if hr != 0 || color_brush.is_null() {
+                (*d2d_device_context).Release();
+                (*text_layout).Release();
+                (*text_format).Release();
+                (*dw_factory).Release();
+                (*d2d_factory).Release();
+                return Err(hr);
+            }
+
+            // 8. Begin drawing frame
+            (*d2d_device_context).BeginDraw();
+
+            // 9. Draw the text layout at top-left corner (10,10)
+            let text_position = D2D1_POINT_2F { x: 10.0, y: 10.0 };
+            (*d2d_device_context).DrawTextLayout(
+                text_position,
+                text_layout as *mut IDWriteTextLayout,
+                color_brush,
+                D2D1_DRAW_TEXT_OPTIONS_NONE,
+            );
+
+            // 10. End drawing
+            let hr = (*d2d_device_context).EndDraw(
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            );
+
+            // Clean up all resources
+            if !color_brush.is_null() {
+                (*color_brush).Release();
+            }
+            if !d2d_device_context.is_null() {
+                (*d2d_device_context).Release();
+            }
             if !text_layout.is_null() {
                 (*text_layout).Release();
             }
@@ -245,7 +320,11 @@ pub mod d3d12_overlay {
                 (*d2d_factory).Release();
             }
 
-            Ok(())
+            if hr != 0 {
+                Err(hr)
+            } else {
+                Ok(())
+            }
         }
         #[cfg(not(windows))]
         {

@@ -161,12 +161,20 @@ impl GameSession {
         self.metadata.playtime_hours + (self.duration_seconds() as f32 / 3600.0)
     }
 
-    /// Wait for game to exit, return exit code
+    /// Wait for game to exit, save profiling data, return exit code
     pub fn wait_for_exit(&mut self) -> anyhow::Result<i32> {
         let status = self.process.wait()?;
 
         // Stop profiler reading
         self.profiler.stop_reading();
+
+        // Save profiling session to disk
+        if let Some(_stats) = self.profiler.session_stats() {
+            let frames = self.profiler.all_frames();
+            if !frames.is_empty() {
+                let _ = crate::session_persistence::save_session(&self.metadata.title, &frames);
+            }
+        }
 
         // Return exit code (0 = normal, non-zero = crash)
         Ok(status.code().unwrap_or(1))

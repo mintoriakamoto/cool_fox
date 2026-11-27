@@ -462,4 +462,64 @@ mod tests {
         assert_eq!(frame.fps, 0.0);
         assert!(frame.alerts.is_empty());
     }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_profiler_records_frames() {
+        use std::io::BufRead;
+        use std::os::unix::net::UnixStream;
+        use std::thread;
+        use std::time::Duration;
+
+        // Initialize profiler (creates socket listener)
+        init();
+
+        // Spawn reader thread to connect and read frames
+        let reader_handle = thread::spawn(|| {
+            thread::sleep(Duration::from_millis(100));
+
+            // Client: connect to profiler socket
+            let pid = std::process::id();
+            let socket_path = format!("/tmp/victory-game-{}.sock", pid);
+
+            if let Ok(stream) = UnixStream::connect(&socket_path) {
+                let reader = std::io::BufReader::new(stream);
+                let mut frames_received = 0;
+
+                for line in reader.lines().take(2) {
+                    if let Ok(line_str) = line {
+                        if let Ok(_frame) = serde_json::from_str::<ProfileFrame>(&line_str) {
+                            frames_received += 1;
+                        }
+                    }
+                }
+
+                return frames_received;
+            }
+            0
+        });
+
+        // Record frames (game-side)
+        for i in 0..2 {
+            let frame = ProfileFrame {
+                timestamp_ms: 1000 + (i * 16) as u64,
+                fps: 60.0,
+                gpu_load_percent: 70.0 + (i as f32),
+                vram_used_mb: 30000,
+                vram_total_mb: 40960,
+                cpu_load_percent: 50.0,
+                gpu_temp_celsius: 70.0,
+                frame_time_ms: 16.667,
+                alerts: vec![],
+            };
+
+            record_frame(frame);
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        // Wait for reader to finish
+        if let Ok(frames_received) = reader_handle.join() {
+            assert_eq!(frames_received, 2, "should receive 2 frames through socket");
+        }
+    }
 }

@@ -9970,7 +9970,14 @@ impl Host {
 
                     // Update overlay buffer with current metrics
                     crate::overlay::Overlay::update_metrics(&prof_frame);
-                    // Overlay text is now available via Overlay::get_metrics() for rendering
+
+                    // Write metrics to debug overlay file
+                    static OVERLAY_INIT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+                    if !OVERLAY_INIT.load(std::sync::atomic::Ordering::Relaxed) {
+                        let _ = crate::overlay_debug::init_debug_overlay();
+                        OVERLAY_INIT.store(true, std::sync::atomic::Ordering::Relaxed);
+                    }
+                    crate::overlay_debug::render_frame_metrics(&prof_frame);
                 }
             }
 

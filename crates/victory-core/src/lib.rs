@@ -16,6 +16,8 @@ pub mod session_analysis;
 
 #[cfg(test)]
 mod integration_test;
+#[cfg(test)]
+mod windows_ipc_test;
 
 pub use config::Config;
 pub use policy::{PolicyError, ensure_outside_repo};

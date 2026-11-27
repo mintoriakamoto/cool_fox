@@ -1,0 +1,16 @@
+[package]
+name = "game-integration-test"
+description = "Integration test: simulates game profiling pipeline"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+victory-core.workspace = true
+anyhow.workspace = true
+
+[[bin]]
+name = "game-integration-test"
+path = "src/main.rs"

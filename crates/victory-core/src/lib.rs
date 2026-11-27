@@ -12,6 +12,9 @@ pub mod policy;
 pub mod profiler_client;
 pub mod game_process;
 
+#[cfg(test)]
+mod integration_test;
+
 pub use config::Config;
 pub use policy::{PolicyError, ensure_outside_repo};
 pub use profiler_client::{ProfilerClient, ProfileFrame, SessionStats};

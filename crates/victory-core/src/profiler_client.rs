@@ -226,7 +226,7 @@ impl ProfilerClient {
         }
     }
 
-    fn update_stats(stats: &mut SessionStats, frame: &ProfileFrame) {
+    pub fn update_stats(stats: &mut SessionStats, frame: &ProfileFrame) {
         stats.frame_count += 1;
 
         // FPS stats
